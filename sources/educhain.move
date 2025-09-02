@@ -4,8 +4,20 @@ module educhain::educhain;
     use sui::clock::{Self, Clock};
     use sui::event;
     use sui::vec_set::{Self, VecSet};
+    use sui::coin::{Self, Coin};
+    use sui::sui::{Self, SUI};
+    use std::string::{Self, String};
+    
+    use educhain::achievement_nft::{ mint_achievement_nft};
+    
     
     // ===== Error Constants =====
+    const E_NOT_AUTHORIZED: u64 = 1;
+    const E_ALREADY_COMPLETED: u64 = 2;
+    const E_MODULE_NOT_FOUND: u64 = 3;
+    const E_INSUFFICIENT_PAYMENT: u64 = 4;
+    const E_INVALID_PROOF: u64 = 5;
+    const E_MODULE_INACTIVE: u64 = 6;
     const E_PLATFORM_PAUSED: u64 = 7;
     const E_INVALID_SCORE: u64 = 8;
     
@@ -48,8 +60,9 @@ module educhain::educhain;
         rating_sum: u64,
         rating_count: u64,
     }
-    
-    public struct UserProfile has key {
+
+  
+     public struct UserProfile has key,store {
         id: UID,
         user_address: address,
         total_xp: u64,
@@ -61,6 +74,7 @@ module educhain::educhain;
         created_at: u64,
         total_spent: u64,
     }
+   
     
     public struct ModuleCompletion has key, store {
         id: UID,
@@ -240,16 +254,15 @@ module educhain::educhain;
         transfer::transfer(moduleObject, creator);
     }
 
-    public entry fun share_module(module: LearningModule) {
-        transfer::share_object(module);
+    public entry fun share_module(mod: LearningModule) {
+        transfer::share_object(mod);
     }
 
-    // ===== Learning & Completion =====
-    public entry fun complete_module(
+      // Internal function to handle the common completion logic
+    fun complete_module_internal(
         platform: &mut LearningPlatform,
-        module: &mut LearningModule,
-        profile: &mut UserProfile,
-        payment: Option<Coin<SUI>>,
+        mod: &mut LearningModule,
+        profile:  &mut UserProfile,
         proof_hash: String,
         score: u8,
         time_taken: u64,
@@ -258,59 +271,16 @@ module educhain::educhain;
         ctx: &mut TxContext
     ) {
         assert!(!platform.is_paused, E_PLATFORM_PAUSED);
-        assert!(module.is_active, E_MODULE_INACTIVE);
+        assert!(mod.is_active, E_MODULE_INACTIVE);
         assert!(score <= 100, E_INVALID_SCORE);
         assert!(rating >= 1 && rating <= 5, E_INVALID_SCORE);
         
         let user = tx_context::sender(ctx);
-        let module_id = object::id(module);
+        let module_id = object::id(mod);
         let current_time = clock::timestamp_ms(clock);
         
         // Check if already completed
         assert!(!vec_set::contains(&profile.completed_modules, &module_id), E_ALREADY_COMPLETED);
-        
-        // Handle payment if required
-        if (module.price > 0) {
-            assert!(option::is_some(&payment), E_INSUFFICIENT_PAYMENT);
-            let payment_coin = option::extract(&mut payment);
-            let payment_amount = coin::value(&payment_coin);
-            assert!(payment_amount >= module.price, E_INSUFFICIENT_PAYMENT);
-            
-            // Calculate platform fee
-            let platform_fee = (module.price * platform.platform_fee_bps) / 10000;
-            let creator_share = module.price - platform_fee;
-            
-            // Split payment
-            let platform_fee_coin = coin::split(&mut payment_coin, platform_fee, ctx);
-            let creator_coin = coin::split(&mut payment_coin, creator_share, ctx);
-            
-            // Send payments
-            transfer::public_transfer(creator_coin, module.creator);
-            transfer::public_transfer(platform_fee_coin, platform.treasury);
-            
-            // Return any excess
-            if (coin::value(&payment_coin) > 0) {
-                transfer::public_transfer(payment_coin, user);
-            } else {
-                coin::destroy_zero(payment_coin);
-            };
-            
-            // Update user spending
-            profile.total_spent = profile.total_spent + module.price;
-            
-            // Emit payment event
-            event::emit(PaymentProcessed {
-                payer: user,
-                module_id,
-                amount: payment_amount,
-                creator_share,
-                platform_fee,
-            });
-        } else if (option::is_some(&payment)) {
-            // Return payment if module is free
-            let payment_coin = option::extract(&mut payment);
-            transfer::public_transfer(payment_coin, user);
-        };
         
         // Create completion proof
         let proof = CompletionProof {
@@ -338,7 +308,7 @@ module educhain::educhain;
         
         // Update user profile
         vec_set::insert(&mut profile.completed_modules, module_id);
-        profile.total_xp = profile.total_xp + module.xp_reward;
+        profile.total_xp = profile.total_xp + mod.xp_reward;
         profile.last_activity = current_time;
         
         // Calculate level up
@@ -350,13 +320,14 @@ module educhain::educhain;
         update_streak(profile, current_time);
         
         // Update module stats
-        module.total_completions = module.total_completions + 1;
-        module.rating_sum = module.rating_sum + (rating as u64);
-        module.rating_count = module.rating_count + 1;
+        mod.total_completions = mod.total_completions + 1;
+        mod.rating_sum = mod.rating_sum + (rating as u64);
+        mod.rating_count = mod.rating_count + 1;
         
         // Handle NFT minting
-        let nft_minted = if (module.nft_tier > 0) {
-            mint_achievement_nft(profile, module_id, module.nft_tier, score, ctx);
+        let nft_minted = if (mod.nft_tier > 0) {
+            mint_achievement_nft(profile, module_id,mod.nft_tier,score,ctx);
+            
             true
         } else {
             false
@@ -366,7 +337,7 @@ module educhain::educhain;
         event::emit(ModuleCompleted {
             user,
             module_id,
-            xp_earned: module.xp_reward,
+            xp_earned: mod.xp_reward,
             score,
             completion_time: current_time,
             nft_minted,
@@ -384,10 +355,84 @@ module educhain::educhain;
         // Store completion proof and record
         transfer::transfer(proof, user);
         transfer::transfer(completion, user);
-        
-        // Destroy empty option
-        option::destroy_none(payment);
     }
+    
+    
+    // ===== Learning & Completion =====
+    public entry fun complete_free_module(
+        platform: &mut LearningPlatform,
+        mod: &mut LearningModule,
+        profile: &mut UserProfile,
+        proof_hash: String,
+        score: u8,
+        time_taken: u64,
+        rating: u8,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(mod.price == 0, E_INSUFFICIENT_PAYMENT);
+        complete_module_internal(
+            platform, mod, profile, proof_hash, score, time_taken, rating, clock, ctx
+        );
+    }
+
+     public entry fun complete_paid_module(
+        platform: &mut LearningPlatform,
+        mod: &mut LearningModule,
+        profile: &mut UserProfile,
+        payment: Coin<SUI>,
+        proof_hash: String,
+        score: u8,
+        time_taken: u64,
+        rating: u8,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(mod.price > 0, E_MODULE_NOT_FOUND);
+        
+        let user = tx_context::sender(ctx);
+        let module_id = object::id(mod);
+        let payment_amount = coin::value(&payment);
+        
+        assert!(payment_amount >= mod.price, E_INSUFFICIENT_PAYMENT);
+        
+        // Calculate platform fee
+        let platform_fee = (mod.price * platform.platform_fee_bps) / 10000;
+        let creator_share = mod.price - platform_fee;
+        
+        // Split payment
+        let platform_fee_coin = coin::split(&mut payment, platform_fee, ctx);
+        let creator_coin = coin::split(&mut payment, creator_share, ctx);
+        
+        // Send payments
+        transfer::public_transfer(creator_coin, mod.creator);
+        transfer::public_transfer(platform_fee_coin, platform.treasury);
+        
+        // Return any excess to user
+        if (coin::value(&payment) > 0) {
+            transfer::public_transfer(payment, user);
+        } else {
+            coin::destroy_zero(payment);
+        };
+        
+        // Update user spending
+        profile.total_spent = profile.total_spent + mod.price;
+        
+        // Emit payment event
+        event::emit(PaymentProcessed {
+            payer: user,
+            module_id,
+            amount: payment_amount,
+            creator_share,
+            platform_fee,
+        });
+        
+        complete_module_internal(
+            platform, mod, profile, proof_hash, score, time_taken, rating, clock, ctx
+        );
+    }
+
+    
 
     // ===== Admin Functions =====
     public entry fun pause_platform(
@@ -432,17 +477,17 @@ module educhain::educhain;
         )
     }
 
-    public fun get_module_stats(module: &LearningModule): (u64, u64, u64, u64, u64) {
-        let avg_rating = if (module.rating_count > 0) {
-            module.rating_sum / module.rating_count
+    public fun get_module_stats(mod: &LearningModule): (u64, u64, u64, u64, u64) {
+        let avg_rating = if (mod.rating_count > 0) {
+            mod.rating_sum / mod.rating_count
         } else { 0 };
         
         (
-            module.price,
-            module.xp_reward,
-            module.total_completions,
+            mod.price,
+            mod.xp_reward,
+            mod.total_completions,
             avg_rating,
-            module.difficulty as u64
+            mod.difficulty as u64
         )
     }
 
@@ -492,30 +537,7 @@ module educhain::educhain;
         };
     }
 
-    fun mint_achievement_nft(
-        profile: &mut UserProfile, 
-        module_id: ID, 
-        tier: u8, 
-        score: u8, 
-        ctx: &mut TxContext
-    ) {
-        // Create unique NFT for this achievement
-        let nft = AchievementNFT {
-            id: object::new(ctx),
-            module_id,
-            completion_date: tx_context::epoch(ctx),
-            score,
-            tier,
-            owner: profile.user_address,
-        };
-        
-        let nft_id = object::id(&nft);
-        vector::push_back(&mut profile.achievement_nfts, nft_id);
-        
-        // Transfer NFT to user
-        transfer::transfer(nft, profile.user_address);
-    }
-
+   
 
 
 

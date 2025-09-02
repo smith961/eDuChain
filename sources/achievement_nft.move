@@ -3,6 +3,7 @@ module educhain::achievement_nft;
     
     use sui::display;
     use sui::package;
+    use sui::vec_set::{Self, VecSet};
     use std::string::{Self, String};
 
     public struct AchievementNFT has key, store {
@@ -13,6 +14,22 @@ module educhain::achievement_nft;
         tier: u8, // 1=bronze, 2=silver, 3=gold
         owner: address,
     }
+
+      
+    public struct UserProfile has key,store {
+        id: UID,
+        user_address: address,
+        total_xp: u64,
+        level: u64,
+        completed_modules: VecSet<ID>, // Set of completed module IDs
+        achievement_nfts: vector<ID>,
+        streak_days: u64,
+        last_activity: u64,
+        created_at: u64,
+        total_spent: u64,
+    }
+    
+
 
     public struct ACHIEVEMENT_NFT has drop {}
 
@@ -46,6 +63,32 @@ module educhain::achievement_nft;
         transfer::public_transfer(display, tx_context::sender(ctx));
     }
 
+    public fun mint_achievement_nft(
+        profile: &mut UserProfile, 
+        module_id: ID, 
+        tier: u8, 
+        score: u8, 
+        ctx: &mut TxContext
+    ) {
+        // Create unique NFT for this achievement
+        let nft = AchievementNFT {
+            id: object::new(ctx),
+            module_id,
+            completion_date: tx_context::epoch(ctx),
+            score,
+            tier,
+            owner: profile.user_address,
+        };
+        
+        let nft_id = object::id(&nft);
+        vector::push_back(&mut profile.achievement_nfts, nft_id);
+        
+        // Transfer NFT to user
+        transfer::transfer(nft, profile.user_address);
+    }
+
+    
+    
     // View functions for NFT metadata
     public fun get_nft_details(nft: &AchievementNFT): (ID, u64, u8, u8, address) {
         (nft.module_id, nft.completion_date, nft.score, nft.tier, nft.owner)

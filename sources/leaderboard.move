@@ -1,11 +1,9 @@
 // ===== Leaderboard Module =====
 module educhain::leaderboard;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    
     use sui::vec_map::{Self, VecMap};
-    use sui::event;
-    use std::vector;
+    
+    
 
     public struct Leaderboard has key {
         id: UID,
