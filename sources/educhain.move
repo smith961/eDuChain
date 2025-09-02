@@ -3,7 +3,8 @@ module educhain::educhain;
 use sui::vec_map::{Self, VecMap};
 use sui::package;
 use sui::display;
-
+use sui::clock::{Self, Clock};
+use sui::event;
 use std::string::{Self, String};
 
 // =====Constants=====
@@ -275,3 +276,42 @@ fun init (otw: EDUCHAIN, ctx: &mut TxContext) {
     transfer::share_object(registry);
     transfer::transfer(admin_cap, tx_context::sender(ctx));
 }
+
+// ===== User Management Functions =====
+
+/// Register a new user
+public entry fun register_user(
+    registry: &mut EDUCHAINRegistry,
+    username: String,
+    email: String,
+    clock: &Clock,
+    ctx: &mut TxContext
+) {
+    let current_time = clock::timestamp_ms(clock);
+
+    let profile = UserProfile {
+        id: object::new(ctx),
+        user: tx_context::sender(ctx),
+        username,
+        email,
+        total_xp: 0,
+        current_level: 0,
+        courses_enrolled: vec_map::empty(),
+        lessons_completed: vec_map::empty(),
+        nfts_earned: vector::empty(),
+        last_login: current_time,
+        login_streak: 1,
+        registration_date: current_time,
+        is_active: true,
+    };
+
+    registry.total_users = registry.total_users + 1;
+
+    event::emit(UserRegistered {
+        user: tx_context::sender(ctx),
+        username: profile.username,
+        timestamp: current_time,
+    });
+    transfer::transfer(profile, tx_context::sender(ctx));
+}
+
