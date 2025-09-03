@@ -17,7 +17,7 @@ export default function OverView() {
       <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-10">
         <div className="bg-gray-800/80 backdrop-blur-sm border border-gray-600 rounded-full px-4 py-2 flex items-center gap-2">
           <Zap className="w-4 h-4 text-yellow-400" />
-          <span className="text-white text-sm font-medium">Built on Sui Blockchain</span>
+          <span className="text-white text-sm font-medium">Nova Labs presents</span>
         </div>
       </div>
 
@@ -45,7 +45,7 @@ export default function OverView() {
 
         <div className="flex flex-col sm:flex-row gap-4 mb-16">
           <button className="bg-transparent border-2 border-white-400 text-white-400 hover:bg-cyan-400 hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105">
-            Explore Platform
+            Explore EduChain
           </button>
         </div>
 

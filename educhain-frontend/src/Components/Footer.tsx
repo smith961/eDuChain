@@ -16,7 +16,7 @@ const Footer = () => {
               experiences.
             </p>
             <div className="flex items-center space-x-2 text-xs">
-              <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⚡ Built on Sui</div>
+              <div className="bg-slate-800 px-3 py-1 rounded-full border border-slate-700">⚡ Built by Nova Labs of Suihub Africa</div>
             </div>
           </div>
 
