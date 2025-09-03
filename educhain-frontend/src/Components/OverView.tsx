@@ -1,4 +1,6 @@
+
 import { Trophy, Zap, Book, Coins, OrbitIcon, Orbit, LucideOrbit, Bitcoin, CoinsIcon } from "lucide-react"
+import { WalletConnect } from "./WalletConnect"
 
 export default function OverView() {
   return (
@@ -19,6 +21,7 @@ export default function OverView() {
           <Zap className="w-4 h-4 text-yellow-400" />
           <span className="text-white text-sm font-medium">Nova Labs presents</span>
         </div>
+
       </div>
 
       <div className="absolute top-8 left-8 z-10">
@@ -34,7 +37,7 @@ export default function OverView() {
           <span className="text-white">& Grow in Web3</span>
           <br />
           <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-           with EduChain
+            with EduChain
           </span>
         </h1>
 
@@ -47,11 +50,15 @@ export default function OverView() {
           <button className="bg-transparent border-2 border-white-400 text-white-400 hover:bg-cyan-400 hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105">
             Explore EduChain
           </button>
+          <div className="absolute top-8 right-8 z-10 ">
+            <WalletConnect />
+          </div>
+        
         </div>
 
         <div className="relative w-full max-w-4xl h-64 mb-8">
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div  className="relative">
+            <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-white-400 to-blue-500 rounded-full blur-xl opacity-60 w-32 h-32"></div>
               {/* Brain icon with Bitcoin symbol */}
               <div className="relative w-32 h-32 bg-gradient-to-r from-white-400 to-blue-500 rounded-full flex items-center justify-center">
@@ -73,7 +80,7 @@ export default function OverView() {
           {/* Books */}
           <div className="absolute top-8 left-1/4 transform -translate-x-1/2">
             <div className="w-12 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded transform rotate-12 shadow-lg"
-           >
+            >
               <Book className="w-6 h-6 text-white m-1" />
             </div>
           </div>
@@ -124,7 +131,7 @@ export default function OverView() {
               <div className="text-gray-400 text-sm md:text-base">Courses Available</div>
             </div>
 
-            
+
             <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-center">
               <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
                 1M+
@@ -134,14 +141,13 @@ export default function OverView() {
           </div>
         </div>
       </div>
-
-    
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/6 w-1 h-1 bg-white rounded-full opacity-60 animate-pulse"></div>
-        <div
-          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70  animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
+        <div 
+          className="absolute top-1/4 left-1/6 w-1 h-1 bg-white rounded-full opacity-60 animate-pulse">
+        </div>
+        <div 
+          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70  animate-pulse" 
+          style={{ animationDelay: "1s" }}></div>
         <div
           className="absolute top-1/2 left-1/12 w-1 h-1 bg-purple-300 rounded-full opacity-50 animate-pulse"
           style={{ animationDelay: "2s" }}
@@ -154,3 +160,15 @@ export default function OverView() {
     </div>
   )
 }
+
+
+
+
+
+
+
+
+
+
+
+
