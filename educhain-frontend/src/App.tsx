@@ -1,39 +1,18 @@
-import { ConnectButton } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
-import { WalletStatus } from "./WalletStatus";
 
-function App() {
+import OverView from "./Components/OverView"; 
+import HighLight from "./Components/HighLight";
+import HowItWorks from "./Components/HowItWorks";
+import Footer from "./Components/Footer";
+export default function App() {
   return (
-    <>
-      <Flex
-        position="sticky"
-        px="4"
-        py="2"
-        justify="between"
-        style={{
-          borderBottom: "1px solid var(--gray-a2)",
-        }}
-      >
-        <Box>
-          <Heading>Welcome to EduChain!!!</Heading>
-        </Box>
+    <div >
+      <OverView />
+      <HighLight />
+      <HowItWorks />
+      <Footer />
 
-        <Box>
-          <ConnectButton />
-        </Box>
-      </Flex>
-      <Container>
-        <Container
-          mt="5"
-          pt="2"
-          px="4"
-          style={{ background: "var(--gray-a2)", minHeight: 500 }}
-        >
-          <WalletStatus />
-        </Container>
-      </Container>
-    </>
+
+      </div>
+    
   );
 }
-
-export default App;
