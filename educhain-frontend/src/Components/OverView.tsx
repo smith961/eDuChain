@@ -1,4 +1,4 @@
-import { Trophy, Zap, Book, Coins } from "lucide-react"
+import { Trophy, Zap, Book, Coins, OrbitIcon, Orbit, LucideOrbit, Bitcoin, CoinsIcon } from "lucide-react"
 
 export default function OverView() {
   return (
@@ -52,16 +52,16 @@ export default function OverView() {
         <div className="relative w-full max-w-4xl h-64 mb-8">
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div  className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-xl opacity-60 w-32 h-32"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-white-400 to-blue-500 rounded-full blur-xl opacity-60 w-32 h-32"></div>
               {/* Brain icon with Bitcoin symbol */}
-              <div className="relative w-32 h-32 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
-                <div className="text-4xl font-bold text-white">₿</div>
+              <div className="relative w-32 h-32 bg-gradient-to-r from-white-400 to-blue-500 rounded-full flex items-center justify-center">
+                <div className="text-4xl font-bold text-white">E💧U</div>
               </div>
               {/* Orbital rings */}
               <div
                 className="absolute inset-0 border-2 border-cyan-400/30 rounded-full w-40 h-40 -top-4 -left-4 animate-spin"
                 style={{ animationDuration: "10s" }}
-              ></div>
+              ><OrbitIcon /></div>
               <div
                 className="absolute inset-0 border border-blue-400/20 rounded-full w-48 h-48 -top-8 -left-8 animate-spin"
                 style={{ animationDuration: "15s", animationDirection: "reverse" }}
@@ -72,7 +72,8 @@ export default function OverView() {
           {/* Floating 3D elements around the center */}
           {/* Books */}
           <div className="absolute top-8 left-1/4 transform -translate-x-1/2">
-            <div className="w-12 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded transform rotate-12 shadow-lg">
+            <div className="w-12 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded transform rotate-12 shadow-lg"
+           >
               <Book className="w-6 h-6 text-white m-1" />
             </div>
           </div>
@@ -80,7 +81,7 @@ export default function OverView() {
           {/* Coins */}
           <div className="absolute top-12 right-1/4 transform translate-x-1/2">
             <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-              <Coins className="w-5 h-5 text-white" />
+              <CoinsIcon className="w-5 h-5 text-white" />
             </div>
           </div>
 
@@ -138,7 +139,7 @@ export default function OverView() {
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/6 w-1 h-1 bg-white rounded-full opacity-60 animate-pulse"></div>
         <div
-          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70 animate-pulse"
+          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70  animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
         <div
