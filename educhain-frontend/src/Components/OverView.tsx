@@ -31,10 +31,10 @@ export default function OverView() {
             Learn, Earn
           </span>
           <br />
-          <span className="text-white">& Grow in</span>
+          <span className="text-white">& Grow in Web3</span>
           <br />
           <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-            Web3
+           with EduChain
           </span>
         </h1>
 
@@ -51,7 +51,7 @@ export default function OverView() {
 
         <div className="relative w-full max-w-4xl h-64 mb-8">
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
+            <div  className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full blur-xl opacity-60 w-32 h-32"></div>
               {/* Brain icon with Bitcoin symbol */}
               <div className="relative w-32 h-32 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">

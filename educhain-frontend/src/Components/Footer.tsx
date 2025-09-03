@@ -1,4 +1,5 @@
-import { Book, Twitter, Github, MessageCircle, Shield } from "lucide-react"
+import { GitHubLogoIcon } from "@radix-ui/react-icons"
+import { Book, Twitter, Github, MessageCircle, Shield, X } from "lucide-react"
 
 const Footer = () => {
   return (
@@ -127,10 +128,10 @@ const Footer = () => {
           
             <div className="flex items-center space-x-4">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <Twitter className="h-5 w-5" />
+                <X className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                <Github className="h-5 w-5" />
+                <GitHubLogoIcon className="h-5 w-5" />
               </a>
               <a href="#" className="text-gray-400 hover:text-white transition-colors">
                 <MessageCircle className="h-5 w-5" />
