@@ -4,7 +4,7 @@ import { Avatar } from "@radix-ui/themes"
 export default function TopNav() {
   return (
     <div className="w-full h-16 bg-slate-900 shadow-md flex items-center justify-between px-6 border-b border-slate-700">
-      {/* Logo Section */}
+    
       <div className="flex items-center space-x-2">
         <FaBook className="text-2xl text-white" />
         <span className="text-2xl font-bold text-white">EduChain</span>

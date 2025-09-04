@@ -1,20 +1,20 @@
 import { Avatar, Button, Card, Progress } from "@radix-ui/themes"
 import { FaShare, FaCheck } from "react-icons/fa"
 
-export default function DashboardContent() {
+export function DashboardContent() {
   return (
     <div className="flex-1 p-6 bg-slate-950 overflow-y-auto">
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Left Column - Dashboard Overview (takes 3 columns) */}
+        
         <div className="xl:col-span-3 space-y-6">
-          {/* Dashboard Overview - Main Section */}
+        
           <Card className="bg-slate-900 border-slate-700 p-6">
             <div className="mb-4">
               <h2 className="text-white text-xl font-semibold mb-2">Dashboard Overview</h2>
               <p className="text-gray-400 text-sm">Deep dive into your learning and XP performance.</p>
             </div>
 
-            {/* Stats Grid */}
+  
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-slate-800 p-4 rounded-lg">
                 <p className="text-gray-400 text-sm mb-1">This Week XP</p>
@@ -30,7 +30,7 @@ export default function DashboardContent() {
               </div>
             </div>
 
-            {/* Continue Learning Section */}
+        
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-white font-semibold text-lg">Continue Learning</h3>
@@ -66,7 +66,6 @@ export default function DashboardContent() {
             </div>
           </Card>
 
-          {/* XP Activity */}
           <Card className="bg-slate-900 border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white text-lg font-semibold">XP Activity</h2>
@@ -108,7 +107,7 @@ export default function DashboardContent() {
             </div>
           </Card>
 
-          {/* Certificates & Credentials */}
+          
           <Card className="bg-slate-900 border-slate-700 p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-white text-lg font-semibold">Certificates & Credentials</h2>
@@ -168,9 +167,9 @@ export default function DashboardContent() {
           </Card>
         </div>
 
-        {/* Right Column - Sidebar Content */}
+        
         <div className="xl:col-span-1 space-y-6">
-          {/* Daily Goals */}
+      
           <Card className="bg-slate-900 border-slate-700 p-4">
             <h2 className="text-white text-lg font-semibold mb-4">Daily Goals</h2>
             <div className="space-y-4">
@@ -189,7 +188,7 @@ export default function DashboardContent() {
             </div>
           </Card>
 
-          {/* Quick Actions */}
+        
           <Card className="bg-slate-900 border-slate-700 p-4">
             <h2 className="text-white text-lg font-semibold mb-4">Quick Actions</h2>
             <div className="space-y-4">
@@ -214,14 +213,18 @@ export default function DashboardContent() {
             </div>
           </Card>
 
-          {/* Leaderboard */}
+      
           <Card className="bg-slate-900 border-slate-700 p-4">
             <h2 className="text-white text-lg font-semibold mb-4">Leaderboard</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <span className="text-white font-bold text-lg">1</span>
-                  <Avatar src="/alex-kim.jpg" fallback="AK" size="2" />
+                  <Avatar
+                    src="https://res.cloudinary.com/demo/image/upload/w_64,h_64,c_fill,g_face/sample.jpg"
+                    fallback="AK"
+                    size="2"
+                  />
                   <span className="text-white font-medium">Alex Kim</span>
                 </div>
                 <span className="text-white font-semibold">5,980 XP</span>
@@ -229,15 +232,23 @@ export default function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <span className="text-white font-bold text-lg">2</span>
-                  <Avatar src="/riga-sen.jpg" fallback="RS" size="2" />
-                  <span className="text-white font-medium">Riga Sen</span>
+                  <Avatar
+                    src="https://res.cloudinary.com/demo/image/upload/w_64,h_64,c_fill,g_face/woman.jpg"
+                    fallback="RS"
+                    size="2"
+                  />
+                  <span className="text-white font-medium">Riya Sen</span>
                 </div>
                 <span className="text-white font-semibold">5,430 XP</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <span className="text-white font-bold text-lg">3</span>
-                  <Avatar src="/diego-m.jpg" fallback="DM" size="2" />
+                  <Avatar
+                    src="https://res.cloudinary.com/demo/image/upload/w_64,h_64,c_fill,g_face/man.jpg"
+                    fallback="DM"
+                    size="2"
+                  />
                   <span className="text-white font-medium">Diego M.</span>
                 </div>
                 <span className="text-white font-semibold">5,110 XP</span>
@@ -245,7 +256,7 @@ export default function DashboardContent() {
             </div>
           </Card>
 
-          
+        
           <Card className="bg-slate-900 border-slate-700 p-4">
             <h2 className="text-white text-lg font-semibold mb-4">Notifications</h2>
             <div className="space-y-3">

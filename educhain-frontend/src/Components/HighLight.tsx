@@ -44,7 +44,7 @@ const HighLight = () => {
               </div>
             </div>
 
-            {/* Content */}
+            
             <h3 className="text-white text-xl font-semibold mb-3">Gained Experience</h3>
             <p className="text-slate-400 leading-relaxed">
               Earn XP, badges, and NFTs as you progress through your learning journey.
