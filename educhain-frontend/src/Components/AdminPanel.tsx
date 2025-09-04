@@ -1,11 +1,12 @@
-import React from 'react';
+import { useNavigate } from "react-router-dom";
 
 export default function AdminPanel() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-sans">
       {/* Header - Admin Overview & System Health */}
       <div className="grid grid-cols-3 gap-6 mb-6">
-        {/* Admin Overview */}
+      
         <div className="col-span-2 bg-gray-900 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Admin Overview</h2>
@@ -19,9 +20,12 @@ export default function AdminPanel() {
               <p className="text-gray-400 text-sm">Active Learners</p>
               <p className="text-2xl font-bold">4,120</p>
             </div>
-            <div className="bg-slate-800 rounded-md p-4">
+            <div 
+              onClick={() => navigate("/create-course")}
+              className="bg-slate-800 rounded-md p-4 cursor-pointer hover:bg-slate-700 transition"
+            >
               <p className="text-gray-400 text-sm">Courses Live</p>
-              <p className="text-2xl font-bold">36</p>
+              <p className="text-2xl font-bold text-blue-400">36</p>
             </div>
             <div className="bg-slate-800 rounded-md p-4">
               <p className="text-gray-400 text-sm">XP Minted</p>

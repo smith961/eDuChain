@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import MainDashboard from "./Components/Main-DashBoard-Content";
+import AdminPanel from "./Components/AdminPanel"; 
+import CourseCreation from "./Components/CourseCreation"; 
 
 export default function App() {
   return (
@@ -9,8 +11,14 @@ export default function App() {
         {/* Default home route */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Dashboard route */}
+      
         <Route path="/user_dashboard" element={<MainDashboard />} />
+
+      
+        <Route path="/admin" element={<AdminPanel />} />
+
+    
+        <Route path="/create-course" element={<CourseCreation />} />
       </Routes>
     </Router>
   );

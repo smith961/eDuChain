@@ -1,6 +1,6 @@
 import React from "react";
 
-// -------- Types --------
+
 interface MentorOverviewCardProps {
   title: string;
   value: string | number;
