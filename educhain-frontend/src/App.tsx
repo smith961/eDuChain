@@ -8,7 +8,7 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        {/* Default home route */}
+    
         <Route path="/" element={<LandingPage />} />
 
       
@@ -18,7 +18,7 @@ export default function App() {
         <Route path="/admin" element={<AdminPanel />} />
 
     
-        <Route path="/create-course" element={<CourseCreation />} />
+        <Route path="/courses" element={<CourseCreation />} />
       </Routes>
     </Router>
   );

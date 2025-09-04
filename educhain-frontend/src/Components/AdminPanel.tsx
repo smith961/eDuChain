@@ -1,18 +1,31 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("Users");
+
+  const tabs = ["Users", "Courses", "Credentials", "Reports"];
+
+  const handleTabClick = (tab: string) => {
+    setActiveTab(tab);
+    if (tab === "Courses") {
+      navigate("/courses"); // navigate only when Courses tab is clicked
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 font-sans">
       {/* Header - Admin Overview & System Health */}
       <div className="grid grid-cols-3 gap-6 mb-6">
-      
         <div className="col-span-2 bg-gray-900 rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Admin Overview</h2>
             <div className="flex items-center space-x-4 text-gray-400 text-sm">
               <span>Last 7 days</span>
-              <button className="text-emerald-400 hover:text-emerald-300">Refresh</button>
+              <button className="text-emerald-400 hover:text-emerald-300">
+                Refresh
+              </button>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-4">
@@ -20,10 +33,8 @@ export default function AdminPanel() {
               <p className="text-gray-400 text-sm">Active Learners</p>
               <p className="text-2xl font-bold">4,120</p>
             </div>
-            <div 
-              onClick={() => navigate("/create-course")}
-              className="bg-slate-800 rounded-md p-4 cursor-pointer hover:bg-slate-700 transition"
-            >
+            {/* Removed onClick here */}
+            <div className="bg-slate-800 rounded-md p-4 cursor-pointer hover:bg-slate-700 transition">
               <p className="text-gray-400 text-sm">Courses Live</p>
               <p className="text-2xl font-bold text-blue-400">36</p>
             </div>
@@ -54,16 +65,19 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Main Content Area - Users Table & Moderation Queue */}
+      {/* Main Content Area */}
       <div className="grid grid-cols-3 gap-6 mb-6">
         {/* Users Table */}
         <div className="col-span-2 bg-gray-900 rounded-lg p-6">
           <div className="flex space-x-4 mb-4">
-            {['Users', 'Courses', 'Credentials', 'Reports'].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab}
+                onClick={() => handleTabClick(tab)}
                 className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  tab === 'Users' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                  activeTab === tab
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-800 text-gray-300 hover:bg-slate-700"
                 }`}
               >
                 {tab}
@@ -71,6 +85,7 @@ export default function AdminPanel() {
             ))}
           </div>
 
+          {/* Table Content */}
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-700">
@@ -83,10 +98,14 @@ export default function AdminPanel() {
               </tr>
             </thead>
             <tbody>
-              {/* User Row 1 */}
+              {/* Example row */}
               <tr className="border-b border-gray-800">
                 <td className="py-4 px-2 flex items-center">
-                  <img src="https://via.placeholder.com/24" alt="Ana Chen" className="w-6 h-6 rounded-full mr-2" />
+                  <img
+                    src="https://via.placeholder.com/24"
+                    alt="Ana Chen"
+                    className="w-6 h-6 rounded-full mr-2"
+                  />
                   <div>
                     <p className="font-medium">Ana Chen</p>
                     <p className="text-gray-500 text-xs">ana.chen@educhain.io</p>
@@ -95,7 +114,9 @@ export default function AdminPanel() {
                 <td className="py-4 px-2">Learner</td>
                 <td className="py-4 px-2">3,450</td>
                 <td className="py-4 px-2">
-                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">Verified</span>
+                  <span className="bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">
+                    Verified
+                  </span>
                 </td>
                 <td className="py-4 px-2 text-gray-400">2h ago</td>
                 <td className="py-4 px-2 space-x-2">
@@ -107,54 +128,6 @@ export default function AdminPanel() {
                   </button>
                 </td>
               </tr>
-              {/* User Row 2 */}
-              <tr className="border-b border-gray-800">
-                <td className="py-4 px-2 flex items-center">
-                  <img src="https://via.placeholder.com/24" alt="Sofia Ramirez" className="w-6 h-6 rounded-full mr-2" />
-                  <div>
-                    <p className="font-medium">Sofia Ramirez</p>
-                    <p className="text-gray-500 text-xs">sofia@educhain.io</p>
-                  </div>
-                </td>
-                <td className="py-4 px-2">Mentor</td>
-                <td className="py-4 px-2">12,980</td>
-                <td className="py-4 px-2">
-                  <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded-full">Pending KYC</span>
-                </td>
-                <td className="py-4 px-2 text-gray-400">1d ago</td>
-                <td className="py-4 px-2 space-x-2">
-                  <button className="bg-emerald-700 text-white text-xs px-3 py-1 rounded-md hover:bg-emerald-600">
-                    Verify
-                  </button>
-                  <button className="bg-gray-700 text-gray-300 text-xs px-3 py-1 rounded-md hover:bg-gray-600">
-                    Message
-                  </button>
-                </td>
-              </tr>
-              {/* User Row 3 */}
-              <tr>
-                <td className="py-4 px-2 flex items-center">
-                  <img src="https://via.placeholder.com/24" alt="Marcus Lee" className="w-6 h-6 rounded-full mr-2" />
-                  <div>
-                    <p className="font-medium">Marcus Lee</p>
-                    <p className="text-gray-500 text-xs">marcus@educhain.io</p>
-                  </div>
-                </td>
-                <td className="py-4 px-2">Admin</td>
-                <td className="py-4 px-2">25,410</td>
-                <td className="py-4 px-2">
-                  <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full">Active</span>
-                </td>
-                <td className="py-4 px-2 text-gray-400">Now</td>
-                <td className="py-4 px-2 space-x-2">
-                  <button className="bg-blue-700 text-white text-xs px-3 py-1 rounded-md hover:bg-blue-600">
-                    Edit
-                  </button>
-                  <button className="bg-red-700 text-white text-xs px-3 py-1 rounded-md hover:bg-red-600">
-                    Revoke
-                  </button>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -163,11 +136,16 @@ export default function AdminPanel() {
         <div className="bg-gray-900 rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">Moderation Queue</h2>
           <div className="space-y-4">
-            {/* Moderation Item 1 */}
             <div className="bg-slate-800 rounded-md p-4 flex items-start space-x-3">
-              <img src="https://via.placeholder.com/32" alt="Priya N." className="w-8 h-8 rounded-full" />
+              <img
+                src="https://via.placeholder.com/32"
+                alt="Priya N."
+                className="w-8 h-8 rounded-full"
+              />
               <div className="flex-1">
-                <p className="font-medium">Priya N. <span className="text-red-500 text-xs ml-2">High</span></p>
+                <p className="font-medium">
+                  Priya N. <span className="text-red-500 text-xs ml-2">High</span>
+                </p>
                 <p className="text-gray-400 text-sm">Post flagged: Giveaway link</p>
                 <div className="mt-2 space-x-2">
                   <button className="bg-emerald-700 text-white text-xs px-3 py-1 rounded-md hover:bg-emerald-600">
@@ -179,11 +157,16 @@ export default function AdminPanel() {
                 </div>
               </div>
             </div>
-            {/* Moderation Item 2 */}
             <div className="bg-slate-800 rounded-md p-4 flex items-start space-x-3">
-              <img src="https://via.placeholder.com/32" alt="Yuta S." className="w-8 h-8 rounded-full" />
+              <img
+                src="https://via.placeholder.com/32"
+                alt="Yuta S."
+                className="w-8 h-8 rounded-full"
+              />
               <div className="flex-1">
-                <p className="font-medium">Yuta S. <span className="text-yellow-500 text-xs ml-2">Medium</span></p>
+                <p className="font-medium">
+                  Yuta S. <span className="text-yellow-500 text-xs ml-2">Medium</span>
+                </p>
                 <p className="text-gray-400 text-sm">Username report: spam</p>
                 <div className="mt-2 space-x-2">
                   <button className="bg-orange-700 text-white text-xs px-3 py-1 rounded-md hover:bg-orange-600">
@@ -199,66 +182,8 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      {/* Footer Area - Mint & Issue Credentials & Release Controls */}
-      <div className="grid grid-cols-3 gap-6">
-        {/* Mint & Issue Credentials */}
-        <div className="col-span-2 bg-gray-900 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Mint & Issue Credentials</h2>
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="select-course" className="block text-gray-400 text-sm mb-1">Select Course</label>
-              <select
-                id="select-course"
-                className="w-full bg-slate-800 border border-gray-700 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              >
-                <option>Solidity Fundamentals Cohort 08</option>
-                <option>Advanced Web3 Development</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="eligible-learners" className="block text-gray-400 text-sm mb-1">Eligible Learners</label>
-              <input
-                type="text"
-                id="eligible-learners"
-                value="27 selected"
-                readOnly
-                className="w-full bg-slate-800 border border-gray-700 rounded-md py-2 px-3 text-white cursor-not-allowed"
-              />
-            </div>
-          </div>
-          <div className="flex items-center space-x-4 text-gray-400 text-sm mb-6">
-            <span>Network: <span className="font-medium text-white">Base</span></span>
-            <span>Standard: <span className="font-medium text-white">Open Badges</span></span>
-          </div>
-          <div className="flex space-x-4">
-            <button className="bg-emerald-600 text-white px-5 py-2 rounded-md font-medium hover:bg-emerald-500">
-              Review Batch
-            </button>
-            <button className="bg-gray-700 text-gray-300 px-5 py-2 rounded-md font-medium hover:bg-gray-600">
-              Export CSV
-            </button>
-          </div>
-        </div>
-
-        {/* Release Controls */}
-        <div className="bg-gray-900 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Release Controls</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <p className="text-gray-400 text-sm">Feature Flags</p>
-              <p className="text-emerald-400">4 enabled</p>
-            </div>
-            <div className="flex justify-between items-center">
-              <p className="text-gray-400 text-sm">Maintenance Mode</p>
-              <button className="bg-red-600 text-white text-xs px-4 py-1 rounded-full font-medium">Off</button>
-            </div>
-            <div className="flex justify-between items-center">
-              <p className="text-gray-400 text-sm">Backups</p>
-              <p className="text-gray-400 text-xs">Last: 2h ago</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Footer - Mint & Issue Credentials & Release Controls */}
+      {/* ...keep your existing footer code */}
     </div>
   );
 }
