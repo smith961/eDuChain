@@ -9,11 +9,8 @@ import ProfileDetailsOverView from "./ProfileDetailsOverView"
 import CoursesContentOverView from "./CoursesContentOverView"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
-<<<<<<< HEAD
-import { useCurrentAccount } from "@mysten/dapp-kit"
-=======
 import SecurityOverView from "./SecurityOverView"
->>>>>>> refs/remotes/origin/main
+import { useCurrentAccount } from "@mysten/dapp-kit"
 function MentorContent() {
   return (
     <div className="flex-1 p-6 bg-slate-950 text-white">
@@ -90,11 +87,30 @@ export default function MainDashboard() {
         </div>
       ) : (
         <div className="card text-center">
-          <div className="mb-6">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue to-green rounded-3xl flex items-center justify-center">
-              {/* <Image className="w-10 h-10 text-black" /> */}
+            <div className="text-center mb-16">
+          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 mt-8">
+            <span className="gradient-text">EDUCHAIN</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+            Learn, Earn, and Own your unique digital certificates on the Sui
+            blockchain
+          </p>
+          <div className="flex flex-wrap justify-center gap-6 mb-12">
+            <div className="bg-white px-8 py-4 rounded-full border border-gray-100">
+              <span className="text-gray-700 font-semibold">
+                ✨ Learning is fun
+              </span>
+            </div>
+            <div className="bg-white px-8 py-4 rounded-full border border-gray-100">
+              <span className="text-gray-700 font-semibold">
+                🚀 Ownership at its peak
+              </span>
+            </div>
+            <div className="bg-white px-8 py-4 rounded-full border border-gray-100">
+              <span className="text-gray-700 font-semibold">🔒 Learn while you Earn</span>
             </div>
           </div>
+        </div>
           <h3 className="text-2xl font-bold text-white-900 mb-3">
             Connect Your Wallet
           </h3>
