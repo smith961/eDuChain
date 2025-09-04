@@ -10,9 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@fortawesome/fontawesome-svg-core": "^7.0.1",
     "@fortawesome/free-solid-svg-icons": "^7.0.1",
     "@fortawesome/react-fontawesome": "^3.0.2",
+=======
+>>>>>>> refs/remotes/origin/main
     "@mysten/dapp-kit": "^0.17.7",
     "@mysten/sui": "^1.37.4",
     "@radix-ui/colors": "^3.0.0",
