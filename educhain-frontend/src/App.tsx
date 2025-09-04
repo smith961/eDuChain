@@ -1,3 +1,4 @@
+import { WalletConnect } from "./Components/WalletConnect";
 import LandingPage from "./pages/LandingPage";
 import MainDashboard from "./Components/Main-DashBoard-Content";
 
