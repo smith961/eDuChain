@@ -10,14 +10,8 @@ import CoursesContentOverView from "./CoursesContentOverView"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
 import SecurityOverView from "./SecurityOverView"
-function MentorContent() {
-  return (
-    <div className="flex-1 p-6 bg-slate-950 text-white">
-      <h1 className="text-2xl font-bold mb-4">Mentor Dashboard</h1>
-      <p className="text-gray-400">Mentor content coming soon...</p>
-    </div>
-  )
-}
+import  MentorContentOverView  from "./MentorOverView"
+
 
 function AdminContent() {
   return (
@@ -28,24 +22,9 @@ function AdminContent() {
   )
 }
 
-function CourseContent() {
-  return (
-    <div className="flex-1 p-6 bg-slate-950 text-white">
-      <h1 className="text-2xl font-bold mb-4">Courses</h1>
-      <p className="text-gray-400">Course content coming soon...</p>
-    </div>
-  )
-}
 
 
-function SecurityContent() {
-  return (
-    <div className="flex-1 p-6 bg-slate-950 text-white">
-      <h1 className="text-2xl font-bold mb-4">Security</h1>
-      <p className="text-gray-400">Security content coming soon...</p>
-    </div>
-  )
-}
+
 
 export default function MainDashboard() {
   const [activePage, setActivePage] = useState("dashboard")
@@ -59,7 +38,7 @@ export default function MainDashboard() {
       case "courses":
         return <CoursesContentOverView />
       case "mentor":
-        return <MentorContent />
+        return <MentorContentOverView />
       case "admin":
         return <AdminContent />
       case "profile":
