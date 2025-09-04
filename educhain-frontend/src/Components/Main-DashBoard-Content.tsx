@@ -11,6 +11,8 @@ import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
 import SecurityOverView from "./SecurityOverView"
 import { useCurrentAccount } from "@mysten/dapp-kit"
+import MentorContentOverView from "./MentorOverView"
+import AdminPanel from "./AdminPanel"
 function MentorContent() {
   return (
     <div className="flex-1 p-6 bg-slate-950 text-white">
@@ -48,7 +50,7 @@ export default function MainDashboard() {
       case "mentor":
         return <MentorContentOverView />
       case "admin":
-        return <AdminContent />
+        return <AdminPanel />
       case "profile":
         return <ProfileDetailsOverView />
       case "security":
