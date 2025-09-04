@@ -9,6 +9,7 @@ import ProfileDetailsOverView from "./ProfileDetailsOverView"
 import CoursesContentOverView from "./CoursesContentOverView"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
+import { useCurrentAccount } from "@mysten/dapp-kit"
 function MentorContent() {
   return (
     <div className="flex-1 p-6 bg-slate-950 text-white">
@@ -47,6 +48,7 @@ function SecurityContent() {
 }
 
 export default function MainDashboard() {
+  const currentAccount = useCurrentAccount();
   const [activePage, setActivePage] = useState("dashboard")
 
   const renderContent = () => {
@@ -77,10 +79,27 @@ export default function MainDashboard() {
   return (
     <div className="h-screen flex flex-col bg-slate-950">
       <TopNav />
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar activePage={activePage} onPageChange={setActivePage} />
-        <main className="flex-1 overflow-auto">{renderContent()}</main>
-      </div>
+      {currentAccount ? (
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar activePage={activePage} onPageChange={setActivePage} />
+          <main className="flex-1 overflow-auto">{renderContent()}</main>
+        </div>
+      ) : (
+        <div className="card text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue to-green rounded-3xl flex items-center justify-center">
+              {/* <Image className="w-10 h-10 text-black" /> */}
+            </div>
+          </div>
+          <h3 className="text-2xl font-bold text-white-900 mb-3">
+            Connect Your Wallet
+          </h3>
+          <p className="text-gray-600 text-lg">
+            Please connect your Sui wallet to start exploring EduChain.
+          </p>
+        </div>
+      )}
+
     </div>
   )
 }

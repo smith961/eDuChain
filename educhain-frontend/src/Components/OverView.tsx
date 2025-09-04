@@ -1,8 +1,19 @@
 
 import { Trophy, Zap, Book, Coins, OrbitIcon, Orbit, LucideOrbit, Bitcoin, CoinsIcon } from "lucide-react"
 import { WalletConnect } from "./WalletConnect"
+import MainDashboard from "./Main-DashBoard-Content"
+
 
 export default function OverView() {
+  const handleExploreClick = () => {
+
+    return (
+
+
+      console.log("Explore EduChain clicked")
+    )
+
+  }
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
       <div className="absolute inset-0">
@@ -47,24 +58,23 @@ export default function OverView() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 mb-16">
-          <button className="bg-transparent border-2 border-white-400 text-white-400 hover:bg-cyan-400 hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105">
+          <button
+            className="bg-transparent border-2 border-white-400 text-white-400 hover:bg-cyan-400 hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105"
+            onClick={handleExploreClick}>
             Explore EduChain
           </button>
-          <div className="absolute top-8 right-8 z-10 ">
-            <WalletConnect />
-          </div>
-        
         </div>
+
 
         <div className="relative w-full max-w-4xl h-64 mb-8">
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-white-400 to-blue-500 rounded-full blur-xl opacity-60 w-32 h-32"></div>
-          
+
               <div className="relative w-32 h-32 bg-gradient-to-r from-white-400 to-blue-500 rounded-full flex items-center justify-center">
                 <div className="text-4xl font-bold text-white">E💧U</div>
               </div>
-            
+
               <div
                 className="absolute inset-0 border-2 border-cyan-400/30 rounded-full w-40 h-40 -top-4 -left-4 animate-spin"
                 style={{ animationDuration: "10s" }}
@@ -76,7 +86,7 @@ export default function OverView() {
             </div>
           </div>
 
-          
+
           <div className="absolute top-8 left-1/4 transform -translate-x-1/2">
             <div className="w-12 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded transform rotate-12 shadow-lg"
             >
@@ -84,20 +94,20 @@ export default function OverView() {
             </div>
           </div>
 
-        
+
           <div className="absolute top-12 right-1/4 transform translate-x-1/2">
             <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
               <CoinsIcon className="w-5 h-5 text-white" />
             </div>
           </div>
 
-        
+
           <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
             <div className="w-80 h-4 bg-gradient-to-r from-purple-600/40 to-cyan-600/40 rounded-full blur-sm"></div>
             <div className="w-64 h-8 bg-gradient-to-r from-purple-500/60 to-cyan-500/60 rounded transform -skew-x-12 -mt-2"></div>
           </div>
 
-        
+
           <div className="absolute top-16 left-16">
             <div className="w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded transform rotate-45"></div>
           </div>
@@ -114,7 +124,7 @@ export default function OverView() {
 
         <div className="w-full max-w-4xl mt-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
             <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-center">
               <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
                 10K+
@@ -122,14 +132,12 @@ export default function OverView() {
               <div className="text-gray-400 text-sm md:text-base">Active Learners</div>
             </div>
 
-            
             <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-center">
               <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
                 500+
               </div>
               <div className="text-gray-400 text-sm md:text-base">Courses Available</div>
             </div>
-
 
             <div className="bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-6 text-center">
               <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
@@ -141,12 +149,13 @@ export default function OverView() {
         </div>
       </div>
       <div className="absolute inset-0 pointer-events-none">
-        <div 
+        <div
           className="absolute top-1/4 left-1/6 w-1 h-1 bg-white rounded-full opacity-60 animate-pulse">
         </div>
-        <div 
-          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70  animate-pulse" 
+        <div
+          className="absolute top-3/4 right-1/6 w-1 h-1 bg-cyan-300 rounded-full opacity-70  animate-pulse"
           style={{ animationDelay: "1s" }}></div>
+
         <div
           className="absolute top-1/2 left-1/12 w-1 h-1 bg-purple-300 rounded-full opacity-50 animate-pulse"
           style={{ animationDelay: "2s" }}
@@ -159,6 +168,8 @@ export default function OverView() {
     </div>
   )
 }
+
+
 
 
 
