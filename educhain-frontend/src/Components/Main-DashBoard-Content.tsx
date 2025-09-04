@@ -9,6 +9,7 @@ import ProfileDetailsOverView from "./ProfileDetailsOverView"
 import CoursesContentOverView from "./CoursesContentOverView"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
+import SecurityOverView from "./SecurityOverView"
 function MentorContent() {
   return (
     <div className="flex-1 p-6 bg-slate-950 text-white">
@@ -64,7 +65,7 @@ export default function MainDashboard() {
       case "profile":
         return <ProfileDetailsOverView />
       case "security":
-        return <SecurityContent />
+        return <SecurityOverView />
       case "community":
         return <Community />
       case "rewards":
