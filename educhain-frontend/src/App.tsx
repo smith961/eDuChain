@@ -1,14 +1,17 @@
-import { WalletConnect } from "./Components/WalletConnect";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import MainDashboard from "./Components/Main-DashBoard-Content";
 
 export default function App() {
   return (
-    <div >
-      <LandingPage/>
-      {/* <MainDashboard/> */}
-      
-      </div>
-    
+    <Router>
+      <Routes>
+        {/* Default home route */}
+        <Route path="/" element={<LandingPage />} />
+
+        {/* Dashboard route */}
+        <Route path="/dashboard" element={<MainDashboard />} />
+      </Routes>
+    </Router>
   );
 }
