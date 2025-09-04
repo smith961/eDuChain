@@ -3,15 +3,7 @@ import { WalletConnect } from "./WalletConnect";
 import { Link } from "react-router-dom";
 
 export default function OverView() {
-  const handleExploreClick = () => {
-
-    return (
-
-
-      console.log("Explore EduChain clicked")
-    )
-
-  }
+  
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Decorative Background Shapes */}
@@ -161,3 +153,5 @@ export default function OverView() {
     </div>
   );
 }
+
+  
