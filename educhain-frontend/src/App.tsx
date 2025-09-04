@@ -10,7 +10,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
 
         {/* Dashboard route */}
-        <Route path="/dashboard" element={<MainDashboard />} />
+        <Route path="/user_dashboard" element={<MainDashboard />} />
       </Routes>
     </Router>
   );

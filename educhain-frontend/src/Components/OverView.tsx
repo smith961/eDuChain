@@ -1,8 +1,8 @@
 import { Trophy, Zap, Book, CoinsIcon, OrbitIcon } from "lucide-react";
-import { WalletConnect } from "./WalletConnect";
 import { Link } from "react-router-dom";
 
 export default function OverView() {
+  
   return (
     <div className="min-h-screen bg-slate-900 relative overflow-hidden">
       {/* Decorative Background Shapes */}
@@ -55,7 +55,7 @@ export default function OverView() {
         <div className="flex flex-col sm:flex-row gap-4 mb-16 relative">
           {/* Explore EduChain → Navigates to /dashboard */}
           <Link
-            to="/dashboard"
+            to="/user_dashboard"
             className="bg-transparent border-2 border-white text-white hover:bg-cyan-400 hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 text-center"
           >
             Explore EduChain
@@ -152,3 +152,5 @@ export default function OverView() {
     </div>
   );
 }
+
+  
