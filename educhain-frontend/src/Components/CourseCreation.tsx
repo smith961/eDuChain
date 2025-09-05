@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { Transaction} from "@mysten/sui";
+import { Transaction } from "@mysten/sui/transactions";
+
 
 
 
@@ -152,8 +153,8 @@ const CourseCreationForm: React.FC = () => {
       });
 
       const result = await signAndExecute({
-        transactionBlock: tx,
-        options: { showEffects: true },
+        transaction: tx,
+        
       });
 
       console.log("✅ Transaction success:", result);
