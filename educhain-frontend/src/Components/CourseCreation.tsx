@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction} from "@mysten/sui";
 
-// -------------------------------
-// Props type for reusable input
-// -------------------------------
+
+
+const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID;
+
+
 interface FormInputProps {
   label: string;
   id: string;
@@ -16,19 +20,16 @@ interface FormInputProps {
   children?: React.ReactNode;
 }
 
-// -------------------------------
-// Reusable Form Input Component
-// -------------------------------
 const FormInput: React.FC<FormInputProps> = ({
   label,
   id,
   name,
-  type = 'text',
+  type = "text",
   value,
   onChange,
-  placeholder = '',
+  placeholder = "",
   required = false,
-  className = '',
+  className = "",
   children,
   ...props
 }) => (
@@ -37,7 +38,7 @@ const FormInput: React.FC<FormInputProps> = ({
       {label} {required && <span className="text-red-500">*</span>}
     </label>
 
-    {type === 'textarea' ? (
+    {type === "textarea" ? (
       <textarea
         id={id}
         name={name}
@@ -49,7 +50,7 @@ const FormInput: React.FC<FormInputProps> = ({
         placeholder={placeholder}
         {...props}
       ></textarea>
-    ) : type === 'select' ? (
+    ) : type === "select" ? (
       <select
         id={id}
         name={name}
@@ -77,58 +78,101 @@ const FormInput: React.FC<FormInputProps> = ({
 
     {children && <div className="mt-1">{children}</div>}
   </div>
-)
+);
+
 
 const CourseCreationForm: React.FC = () => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    instructor: '',
-    category: '',
+    title: "",
+    description: "",
+    instructor: "",
+    category: "",
     difficulty_level: 1,
     estimated_duration: 0,
   });
 
+  const [loading, setLoading] = useState(false);
+
+  const account = useCurrentAccount();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+
   const categories = [
-    'Programming',
-    'Design',
-    'Business',
-    'Marketing',
-    'Science',
-    'Mathematics',
-    'Language',
-    'Music',
-    'Other'
+    "Programming",
+    "Design",
+    "Business",
+    "Marketing",
+    "Science",
+    "Mathematics",
+    "Language",
+    "Music",
+    "Other",
   ];
 
   const difficultyLevels = [
-    { value: 1, label: 'Beginner' },
-    { value: 2, label: 'Intermediate' },
-    { value: 3, label: 'Advanced' },
-    { value: 4, label: 'Expert' }
+    { value: 1, label: "Beginner" },
+    { value: 2, label: "Intermediate" },
+    { value: 3, label: "Advanced" },
+    { value: 4, label: "Expert" },
   ];
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'difficulty_level' || name === 'estimated_duration'
-        ? parseInt(value)
-        : value
+      [name]: name === "difficulty_level" || name === "estimated_duration" ? parseInt(value) : value,
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Course data:', formData);
-    alert('Course created successfully! (Check console for data)');
+
+    if (!account) {
+      alert("Please connect your wallet first!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const tx = new Transaction();
+
+      
+      tx.moveCall({
+        target: `${PACKAGE_ID}::edu_chain::create_course`,
+        arguments: [
+          tx.pure.string(formData.title),
+          tx.pure.string(formData.description),
+          tx.pure.address(formData.instructor), 
+          tx.pure.string(formData.category),
+          tx.pure.u64(formData.difficulty_level),
+          tx.pure.u64(formData.estimated_duration),
+        ],
+      });
+
+      const result = await signAndExecute({
+        transactionBlock: tx,
+        options: { showEffects: true },
+      });
+
+      console.log("✅ Transaction success:", result);
+      alert("🎉 Course created successfully on-chain!");
+    } catch (err) {
+      console.error("❌ Transaction failed:", err);
+      alert("Failed to create course. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 leading-tight">Create New Course</h1>
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 leading-tight">
+            Create New Course
+          </h1>
           <p className="text-lg text-gray-600">Empower learners with your knowledge.</p>
         </div>
 
@@ -167,7 +211,9 @@ const CourseCreationForm: React.FC = () => {
             className="font-mono text-sm"
             placeholder="0x..."
           >
-            <p className="text-sm text-gray-500 mt-2">Enter the instructor's blockchain wallet address.</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Enter the instructor&apos;s blockchain wallet address.
+            </p>
           </FormInput>
 
           {/* Category */}
@@ -179,11 +225,15 @@ const CourseCreationForm: React.FC = () => {
             value={formData.category}
             onChange={handleInputChange}
             required
-            className="pr-10"
+            className="pr-10 text-gray-900 bg-white"
           >
-            <option value="" disabled>Select a category</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
+            <option value="" disabled className="text-gray-400">
+              Select a category
+            </option>
+            {categories.map((category) => (
+              <option key={category} value={category} className="text-gray-900">
+                {category}
+              </option>
             ))}
           </FormInput>
 
@@ -193,13 +243,14 @@ const CourseCreationForm: React.FC = () => {
               Difficulty Level <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {difficultyLevels.map(level => (
+              {difficultyLevels.map((level) => (
                 <label
                   key={level.value}
                   className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 text-center
-                  ${formData.difficulty_level === level.value
-                      ? 'border-blue-600 bg-blue-50 text-blue-800 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm text-gray-700'
+                  ${
+                    formData.difficulty_level === level.value
+                      ? "border-blue-600 bg-blue-50 text-blue-800 shadow-md"
+                      : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm text-gray-700"
                   }`}
                 >
                   <input
@@ -219,7 +270,10 @@ const CourseCreationForm: React.FC = () => {
 
           {/* Estimated Duration */}
           <div>
-            <label htmlFor="estimated_duration" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="estimated_duration"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Estimated Duration (minutes) <span className="text-red-500">*</span>
             </label>
             <div className="relative">
@@ -247,9 +301,14 @@ const CourseCreationForm: React.FC = () => {
           <div className="pt-8">
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold py-4 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg"
+              disabled={loading}
+              className={`w-full ${
+                loading
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800"
+              } text-white font-extrabold py-4 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg`}
             >
-              Create Course
+              {loading ? "Creating..." : "Create Course"}
             </button>
           </div>
         </form>
