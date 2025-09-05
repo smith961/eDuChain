@@ -701,14 +701,6 @@ public entry fun sign_in(
         transfer::public_transfer(nft, tx_context::sender(ctx));
     }
 
-
-
-
-     
-     
-     
-     
-     
      // ===== Helper Functions =====
 
     /// Calculate XP reward for lesson based on duration and difficulty

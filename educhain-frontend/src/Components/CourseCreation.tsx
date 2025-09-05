@@ -263,7 +263,7 @@ const CourseCreationForm: React.FC = () => {
             ))}
           </FormInput>
 
-          {/* Difficulty Level */}
+      
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Difficulty Level <span className="text-red-500">*</span>
@@ -294,7 +294,7 @@ const CourseCreationForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Estimated Duration */}
+        
           <div>
             <label
               htmlFor="estimated_duration"
