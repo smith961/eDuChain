@@ -147,9 +147,9 @@ const CourseCreationForm: React.FC = () => {
     try {
       const tx = new Transaction();
       const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
-    const EDUCHAINRegistry = import.meta.env.VITE_REGISTRY_ID;
+    const Registry = import.meta.env.VITE_EDUCHAINRegistry;
     
-    if (!ADMIN_CAP_ID || !EDUCHAINRegistry) {
+    if (!ADMIN_CAP_ID || !Registry) {
       throw new Error("Admin Cap or Registry ID not configured");
     }
 
@@ -165,7 +165,7 @@ const CourseCreationForm: React.FC = () => {
         target: `${PACKAGE_ID}::educhain::create_course`,
         arguments: [
            tx.object(ADMIN_CAP_ID), // AdminCap object
-        tx.object(EDUCHAINRegistry), 
+        tx.object(Registry), 
           tx.pure.string(formData.title),
           tx.pure.string(formData.description),
           tx.pure.address(formData.instructor), 
