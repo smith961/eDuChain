@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { Transaction} from "@mysten/sui";
+import { Transaction} from "@mysten/sui/transactions";
 
 
 
@@ -94,7 +94,7 @@ const CourseCreationForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const account = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   const categories = [
     "Programming",
@@ -124,6 +124,9 @@ const CourseCreationForm: React.FC = () => {
       [name]: name === "difficulty_level" || name === "estimated_duration" ? parseInt(value) : value,
     }));
   };
+  const isValidSuiAddress = (address: string): boolean => {
+  return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +135,11 @@ const CourseCreationForm: React.FC = () => {
       alert("Please connect your wallet first!");
       return;
     }
+    if (!isValidSuiAddress(formData.instructor)) {
+    alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
+    return;
+  }
+
 
     setLoading(true);
 
@@ -152,7 +160,8 @@ const CourseCreationForm: React.FC = () => {
       });
 
       const result = await signAndExecute({
-        transactionBlock: tx,
+        transaction: tx,
+        
         options: { showEffects: true },
       });
 
