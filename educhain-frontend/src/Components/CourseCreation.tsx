@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useCurrentAccount, useSignAndExecuteTransaction, useOwnedObjects } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction} from "@mysten/sui/transactions";
 import { WalletConnect } from "./WalletConnect";
 
+
+
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID;
-const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
-const REGISTRY_ID = import.meta.env.VITE_EDUCHAINRegistry?.trim(); // Added trim() to remove any spaces
+
 
 interface FormInputProps {
   label: string;
@@ -80,6 +81,7 @@ const FormInput: React.FC<FormInputProps> = ({
   </div>
 );
 
+
 const CourseCreationForm: React.FC = () => {
   const [formData, setFormData] = useState({
     title: "",
@@ -94,9 +96,6 @@ const CourseCreationForm: React.FC = () => {
 
   const account = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
-  const { data: ownedObjects } = useOwnedObjects({
-    owner: account?.address,
-  });
 
   const categories = [
     "Programming",
@@ -117,10 +116,6 @@ const CourseCreationForm: React.FC = () => {
     { value: 4, label: "Expert" },
   ];
 
-  const isValidSuiAddress = (address: string): boolean => {
-    return /^0x[0-9a-f]{64}$/.test(address.slice(2)) && address.length === 66;
-  };
-
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -130,6 +125,9 @@ const CourseCreationForm: React.FC = () => {
       [name]: name === "difficulty_level" || name === "estimated_duration" ? parseInt(value) : value,
     }));
   };
+  const isValidSuiAddress = (address: string): boolean => {
+  return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,74 +136,57 @@ const CourseCreationForm: React.FC = () => {
       alert("Please connect your wallet first!");
       return;
     }
-
-    // Check if user owns the AdminCap
-    const ownsAdminCap = ownedObjects?.some((obj: { data: { objectId: any; }; }) => 
-      obj.data?.objectId === ADMIN_CAP_ID
-    );
-
-    if (!ownsAdminCap) {
-      alert("You don't have permission to create courses. Admin privileges required.");
-      return;
-    }
-
     if (!isValidSuiAddress(formData.instructor)) {
-      alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
-      return;
-    }
+    alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
+    return;
+  }
 
-    if (!ADMIN_CAP_ID || !REGISTRY_ID) {
-      alert("Configuration error: Admin Cap or Registry ID not configured");
-      return;
-    }
 
     setLoading(true);
 
     try {
       const tx = new Transaction();
+      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
+    const EDUCHAINRegistry = import.meta.env.VITE_REGISTRY_ID;
+    
+    if (!ADMIN_CAP_ID || !EDUCHAINRegistry) {
+      throw new Error("Admin Cap or Registry ID not configured");
+    }
 
-      // Get the clock object
-      const clock = tx.sharedObjectRef({
-        objectId: '0x6',
-        initialSharedVersion: 1,
-        mutable: false,
-      });
+    
+    const clock = tx.sharedObjectRef({
+      objectId: '0x6', // Fixed Clock object ID
+      initialSharedVersion: 1,
+      mutable: false,
+    });
 
-      // Create the course with all 9 required arguments
+      
       tx.moveCall({
         target: `${PACKAGE_ID}::educhain::create_course`,
         arguments: [
-          tx.object(ADMIN_CAP_ID),                     // 1. AdminCap
-          tx.object(REGISTRY_ID),                      // 2. Registry
-          tx.pure.string(formData.title),              // 3. Title
-          tx.pure.string(formData.description),        // 4. Description
-          tx.pure.address(formData.instructor),        // 5. Instructor
-          tx.pure.string(formData.category),           // 6. Category
-          tx.pure.u8(formData.difficulty_level),       // 7. Difficulty (changed to u8)
-          tx.pure.u64(formData.estimated_duration),    // 8. Duration
-          clock,                                       // 9. Clock
+           tx.object(ADMIN_CAP_ID), // AdminCap object
+        tx.object(EDUCHAINRegistry), 
+          tx.pure.string(formData.title),
+          tx.pure.string(formData.description),
+          tx.pure.address(formData.instructor), 
+          tx.pure.string(formData.category),
+          tx.pure.u64(formData.difficulty_level),
+          tx.pure.u64(formData.estimated_duration),
+          clock,
         ],
       });
 
       const result = await signAndExecute({
         transaction: tx,
-      }, {
-        options: { 
-          showEffects: true,
-          showObjectChanges: true,
-        },
+        
+        options: { showEffects: true },
       });
 
       console.log("✅ Transaction success:", result);
-      
-      // Provide transaction link for verification
-      const transactionDigest = result.digest;
-      const suiScanUrl = `https://suiscan.xyz/testnet/tx/${transactionDigest}`;
-      alert(`🎉 Course created successfully!\nView on SuiScan: ${suiScanUrl}`);
-      
-    } catch (err: any) {
+      alert("🎉 Course created successfully on-chain!");
+    } catch (err) {
       console.error("❌ Transaction failed:", err);
-      alert(`Failed to create course: ${err.message || "Unknown error"}`);
+      alert("Failed to create course. Check console for details.");
     } finally {
       setLoading(false);
     }
@@ -215,7 +196,7 @@ const CourseCreationForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
         <div className="text-center mb-10">
-          <WalletConnect />
+            <WalletConnect />
           <h1 className="text-4xl font-extrabold text-gray-900 mb-3 leading-tight">
             Create New Course
           </h1>
@@ -258,7 +239,7 @@ const CourseCreationForm: React.FC = () => {
             placeholder="0x..."
           >
             <p className="text-sm text-gray-500 mt-2">
-              Enter the instructor's blockchain wallet address.
+              Enter the instructor&apos;s blockchain wallet address.
             </p>
           </FormInput>
 
