@@ -5,7 +5,7 @@ import { WalletConnect } from "./WalletConnect";
 
 
 
-const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID;
+
 
 
 interface FormInputProps {
@@ -95,7 +95,7 @@ const CourseCreationForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const account = useCurrentAccount();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
 
   const categories = [
     "Programming",
@@ -141,13 +141,14 @@ const CourseCreationForm: React.FC = () => {
     return;
   }
 
-
+    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
+    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
+    const Registry = import.meta.env.VITE_EDUCHAINRegistry as string; 
     setLoading(true);
 
     try {
       const tx = new Transaction();
-      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
-    const Registry = import.meta.env.VITE_EDUCHAINRegistry;
+     
     
     if (!ADMIN_CAP_ID || !Registry) {
       throw new Error("Admin Cap or Registry ID not configured");
@@ -160,27 +161,25 @@ const CourseCreationForm: React.FC = () => {
       mutable: false,
     });
 
+     
       
+
       tx.moveCall({
-        target: `${PACKAGE_ID}::educhain::create_course`,
+        target: `${packageId}::educhain::create_course`,
         arguments: [
-           tx.object(ADMIN_CAP_ID), // AdminCap object
-        tx.object(Registry), 
+          tx.object(ADMIN_CAP_ID), // AdminCap object
+          tx.object(Registry), 
           tx.pure.string(formData.title),
           tx.pure.string(formData.description),
           tx.pure.address(formData.instructor), 
           tx.pure.string(formData.category),
-          tx.pure.u64(formData.difficulty_level),
+          tx.pure.u8(formData.difficulty_level),
           tx.pure.u64(formData.estimated_duration),
           clock,
         ],
       });
 
-      const result = await signAndExecute({
-        transaction: tx,
-        
-        options: { showEffects: true },
-      });
+      const result = await signAndExecute({ transaction: tx});
 
       console.log("✅ Transaction success:", result);
       alert("🎉 Course created successfully on-chain!");
