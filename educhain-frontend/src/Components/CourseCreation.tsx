@@ -146,16 +146,19 @@ const CourseCreationForm: React.FC = () => {
 
     try {
       const tx = new Transaction();
-      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID;
-    const Registry = import.meta.env.VITE_EDUCHAINRegistry;
-    
+      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP;
+      const Registry = import.meta.env.VITE_REGISTRY_ID;
+      
+      console.log("ADMIN_CAP_ID:", ADMIN_CAP_ID); 
+      console.log("Registry ID:", Registry); 
+      
     if (!ADMIN_CAP_ID || !Registry) {
       throw new Error("Admin Cap or Registry ID not configured");
     }
 
     
     const clock = tx.sharedObjectRef({
-      objectId: '0x6', // Fixed Clock object ID
+      objectId: '0x6', 
       initialSharedVersion: 1,
       mutable: false,
     });
