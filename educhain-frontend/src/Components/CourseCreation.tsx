@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction} from "@mysten/sui/transactions";
+import { WalletConnect } from "./WalletConnect";
 
 
 
@@ -148,7 +149,7 @@ const CourseCreationForm: React.FC = () => {
 
       
       tx.moveCall({
-        target: `${PACKAGE_ID}::edu_chain::create_course`,
+        target: `${PACKAGE_ID}::educhain::create_course`,
         arguments: [
           tx.pure.string(formData.title),
           tx.pure.string(formData.description),
@@ -179,6 +180,7 @@ const CourseCreationForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
         <div className="text-center mb-10">
+            <WalletConnect />
           <h1 className="text-4xl font-extrabold text-gray-900 mb-3 leading-tight">
             Create New Course
           </h1>
