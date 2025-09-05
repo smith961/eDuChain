@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { Transaction} from "@mysten/sui/transactions";
+import { Transaction } from "@mysten/sui/transactions";
 import { WalletConnect } from "./WalletConnect";
 
 
@@ -60,8 +60,9 @@ const FormInput: React.FC<FormInputProps> = ({
         required={required}
         className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white appearance-none pr-10 ${className}`}
         {...props}
+        
       >
-        {children}
+        {children} 
       </select>
     ) : (
       <input
@@ -74,12 +75,13 @@ const FormInput: React.FC<FormInputProps> = ({
         className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${className}`}
         placeholder={placeholder}
         {...props}
+        
       />
     )}
 
-    {children && <div className="mt-1">{children}</div>}
   </div>
 );
+
 
 
 const CourseCreationForm: React.FC = () => {
@@ -126,8 +128,8 @@ const CourseCreationForm: React.FC = () => {
     }));
   };
   const isValidSuiAddress = (address: string): boolean => {
-  return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
-};
+    return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,41 +139,41 @@ const CourseCreationForm: React.FC = () => {
       return;
     }
     if (!isValidSuiAddress(formData.instructor)) {
-    alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
-    return;
-  }
+      alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
+      return;
+    }
 
     const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
     const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
-    const Registry = import.meta.env.VITE_EDUCHAINRegistry as string; 
+    const Registry = import.meta.env.VITE_EDUCHAINRegistry as string;
     setLoading(true);
 
     try {
       const tx = new Transaction();
-     
-    
-    if (!ADMIN_CAP_ID || !Registry) {
-      throw new Error("Admin Cap or Registry ID not configured");
-    }
 
-    
-    const clock = tx.sharedObjectRef({
-      objectId: '0x6', // Fixed Clock object ID
-      initialSharedVersion: 1,
-      mutable: false,
-    });
 
-     
-      
+      if (!ADMIN_CAP_ID || !Registry) {
+        throw new Error("Admin Cap or Registry ID not configured");
+      }
+
+
+      const clock = tx.sharedObjectRef({
+        objectId: '0x6', // Fixed Clock object ID
+        initialSharedVersion: 1,
+        mutable: false,
+      });
+
+
+
 
       tx.moveCall({
         target: `${packageId}::educhain::create_course`,
         arguments: [
           tx.object(ADMIN_CAP_ID), // AdminCap object
-          tx.object(Registry), 
+          tx.object(Registry),
           tx.pure.string(formData.title),
           tx.pure.string(formData.description),
-          tx.pure.address(formData.instructor), 
+          tx.pure.address(formData.instructor),
           tx.pure.string(formData.category),
           tx.pure.u8(formData.difficulty_level),
           tx.pure.u64(formData.estimated_duration),
@@ -179,7 +181,7 @@ const CourseCreationForm: React.FC = () => {
         ],
       });
 
-      const result = await signAndExecute({ transaction: tx});
+      const result = await signAndExecute({ transaction: tx });
 
       console.log("✅ Transaction success:", result);
       alert("🎉 Course created successfully on-chain!");
@@ -195,8 +197,8 @@ const CourseCreationForm: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
         <div className="text-center mb-10">
-            <WalletConnect />
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 leading-tight">
+          <WalletConnect />
+          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 mt-3 leading-tight">
             Create New Course
           </h1>
           <p className="text-lg text-gray-600">Empower learners with your knowledge.</p>
@@ -257,7 +259,7 @@ const CourseCreationForm: React.FC = () => {
               Select a category
             </option>
             {categories.map((category) => (
-              <option key={category} value={category} className="text-gray-900">
+              <option key={category} value={category} className="text-gray-900" hidden={category === " "}>
                 {category}
               </option>
             ))}
@@ -273,11 +275,10 @@ const CourseCreationForm: React.FC = () => {
                 <label
                   key={level.value}
                   className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 text-center
-                  ${
-                    formData.difficulty_level === level.value
+                  ${formData.difficulty_level === level.value
                       ? "border-blue-600 bg-blue-50 text-blue-800 shadow-md"
                       : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm text-gray-700"
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -328,11 +329,10 @@ const CourseCreationForm: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full ${
-                loading
+              className={`w-full ${loading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800"
-              } text-white font-extrabold py-4 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg`}
+                } text-white font-extrabold py-4 px-6 rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-lg`}
             >
               {loading ? "Creating..." : "Create Course"}
             </button>
