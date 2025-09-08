@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { SuiObjectData } from "@mysten/sui/client";
-import { apiService } from "../services/api";
+import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
 
 interface Course {
@@ -49,13 +49,22 @@ export default function CoursesContentOverView() {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiService.getPublishedCourses();
+      // Get published courses from IndexedDB
+      const publishedCoursesData = await courseStorage.getPublishedCourses();
 
-      if (response.success) {
-        setPublishedCourses(response.courses);
-      } else {
-        setError('Failed to load courses');
-      }
+      // Convert to Course interface format
+      const courses: Course[] = publishedCoursesData.map(storedCourse => ({
+        id: storedCourse.objectId,
+        title: storedCourse.title,
+        description: storedCourse.description,
+        instructor: storedCourse.instructor,
+        category: storedCourse.category,
+        difficulty_level: storedCourse.difficulty_level,
+        estimated_duration: storedCourse.estimated_duration,
+        objectId: storedCourse.objectId,
+      }));
+
+      setPublishedCourses(courses);
     } catch (error) {
       console.error("Error fetching published courses:", error);
       setError('Failed to load courses');
