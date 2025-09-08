@@ -7,6 +7,7 @@ import { DashboardContent } from "./DashBoard-Content"
 import { LearningPathContent } from "./LearningPathContent"
 import ProfileDetailsOverView from "./ProfileDetailsOverView"
 import CoursesContentOverView from "./CoursesContentOverView"
+import LessonViewer from "./LessonViewer"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
 import SecurityOverView from "./SecurityOverView"
@@ -31,6 +32,52 @@ function AdminContent() {
   )
 }
 
+function LessonsContent() {
+  const availableLessons = [
+    {
+      id: 'sui-move',
+      title: 'Introduction to Sui Move Programming',
+      description: 'Comprehensive guide to Sui Move programming language',
+      difficulty: 'Beginner to Advanced',
+      duration: '2-3 hours',
+      file: 'sui-move.mdx'
+    }
+  ];
+
+  const handleLessonClick = (lessonFile: string) => {
+    window.location.href = `/lesson/${lessonFile}`;
+  };
+
+  return (
+    <div className="flex-1 p-6 bg-slate-950 text-white">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Available Lessons</h1>
+        <p className="text-gray-400">Explore our comprehensive lesson library</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {availableLessons.map((lesson) => (
+          <div
+            key={lesson.id}
+            className="bg-slate-800 rounded-lg p-6 hover:bg-slate-700 transition-colors cursor-pointer"
+            onClick={() => handleLessonClick(lesson.file)}
+          >
+            <h3 className="text-xl font-semibold mb-3">{lesson.title}</h3>
+            <p className="text-gray-400 mb-4">{lesson.description}</p>
+            <div className="flex justify-between items-center text-sm text-gray-500">
+              <span>Difficulty: {lesson.difficulty}</span>
+              <span>Duration: {lesson.duration}</span>
+            </div>
+            <button className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+              Start Reading
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 
 
@@ -47,6 +94,8 @@ export default function MainDashboard() {
         return <LearningPathContent />
       case "courses":
         return <CoursesContentOverView />
+      case "lessons":
+        return <LessonsContent />
       case "mentor":
         return <MentorContentOverView />
       case "admin":

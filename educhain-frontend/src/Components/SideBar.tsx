@@ -11,6 +11,7 @@ import {
   FaUserShield,
   FaUser,
   FaShieldAlt,
+  FaFileAlt,
 } from "react-icons/fa"
 
 interface SidebarItemProps {
@@ -67,6 +68,13 @@ export default function Sidebar({ activePage, onPageChange }: SidebarProps) {
             icon={<FaBook />}
             label="Courses"
             page="courses"
+            activePage={activePage}
+            onPageChange={onPageChange}
+          />
+          <SidebarItem
+            icon={<FaFileAlt />}
+            label="Lessons"
+            page="lessons"
             activePage={activePage}
             onPageChange={onPageChange}
           />
