@@ -122,9 +122,12 @@ const CourseCreationForm: React.FC = () => {
     title: '',
     content_type: '',
     content_url: '',
+    selected_content: '',
     duration: 0,
     order_index: 0,
   });
+
+  const [availableLessons, setAvailableLessons] = useState<string[]>([]);
   
 
   
@@ -165,10 +168,19 @@ const CourseCreationForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setLessonForm((prev) => ({
-      ...prev,
-      [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
-    }));
+    setLessonForm((prev) => {
+      const updatedForm = {
+        ...prev,
+        [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
+      };
+
+      // If lesson content is selected, automatically set the content URL
+      if (name === "selected_content" && value) {
+        updatedForm.content_url = `/lesson/${value}`;
+      }
+
+      return updatedForm;
+    });
   };
   const isValidSuiAddress = (address: string): boolean => {
     return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
@@ -307,6 +319,7 @@ const CourseCreationForm: React.FC = () => {
         title: '',
         content_type: '',
         content_url: '',
+        selected_content: '',
         duration: 0,
         order_index: 0,
       });
@@ -452,6 +465,22 @@ const CourseCreationForm: React.FC = () => {
       fetchCourses();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    // Load available lesson content files
+    loadAvailableLessons();
+  }, []);
+
+  const loadAvailableLessons = async () => {
+    try {
+      // For now, we'll hardcode the available lessons
+      // In a real app, you might fetch this from an API or scan the folder
+      const lessons = ['sui-move.mdx'];
+      setAvailableLessons(lessons);
+    } catch (error) {
+      console.error('Error loading available lessons:', error);
+    }
+  };
   return (
     <>
       {activeTab === "create course" ? (
@@ -714,13 +743,29 @@ const CourseCreationForm: React.FC = () => {
         </FormInput>
 
         <FormInput
+          label="Lesson Content"
+          id="selected_content"
+          name="selected_content"
+          type="select"
+          value={lessonForm.selected_content}
+          onChange={handleLessonInputChange}
+          required
+        >
+          <option value="" disabled>Select lesson content</option>
+          {availableLessons.map((lesson) => (
+            <option key={lesson} value={lesson}>
+              {lesson.replace('.mdx', '').replace('-', ' ').toUpperCase()}
+            </option>
+          ))}
+        </FormInput>
+
+        <FormInput
           label="Content URL"
           id="content_url"
           name="content_url"
           value={lessonForm.content_url}
           onChange={handleLessonInputChange}
-          required
-          placeholder="https://example.com/content"
+          placeholder="Or enter custom URL"
         />
 
         <FormInput

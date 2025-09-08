@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import MainDashboard from "./Components/Main-DashBoard-Content";
-import AdminPanel from "./Components/AdminPanel"; 
-import CourseCreation from "./Components/CourseCreation"; 
+import AdminPanel from "./Components/AdminPanel";
+import CourseCreation from "./Components/CourseCreation";
+import LessonViewer from "./Components/LessonViewer";
 
 export default function App() {
   return (
@@ -19,6 +20,8 @@ export default function App() {
 
     
         <Route path="/courses" element={<CourseCreation />} />
+
+        <Route path="/lesson/:lessonId" element={<LessonViewer />} />
       </Routes>
     </Router>
   );
