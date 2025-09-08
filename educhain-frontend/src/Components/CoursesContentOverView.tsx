@@ -266,9 +266,9 @@ export default function CoursesContentOverView() {
     }
   };
   return (
-    <div className="flex bg-gray-900 text-white min-h-screen p-8">
-  
-      <div className="flex-1 mr-8">
+    <div className="flex bg-gray-900 text-white min-h-screen p-8 overflow-hidden">
+
+      <div className="flex-1 mr-8 overflow-y-auto">
       
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-2">Courses</h2>
@@ -401,7 +401,7 @@ export default function CoursesContentOverView() {
       </div>
 
     
-      <div className="w-80 bg-gray-800 p-6 rounded-lg shadow-md border border-gray-700">
+      <div className="w-80 bg-gray-800 p-6 rounded-lg shadow-md border border-gray-700 overflow-y-auto" style={{maxHeight: 'calc(100vh - 4rem)'}}>
         <h2 className="text-2xl font-bold mb-6">Filters</h2>
 
         <div className="mb-6">
