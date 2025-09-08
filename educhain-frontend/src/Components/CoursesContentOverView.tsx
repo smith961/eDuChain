@@ -15,7 +15,7 @@ interface Course {
   objectId: string;
 }
 
-const enrolledCourses = 8;
+const totalEnrolledCourses = 8;
 const inProgressCourses = 4;
 const completedCourses = 6;
 
@@ -29,9 +29,12 @@ const yourCoursesData = [
 export default function CoursesContentOverView() {
   const suiClient = useSuiClient();
   const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [courseProgress, setCourseProgress] = useState<{[key: string]: {status: 'not_started' | 'in_progress' | 'completed', currentLesson?: number}}>({});
 
   useEffect(() => {
     fetchPublishedCourses();
+    loadEnrolledCourses();
   }, []);
 
   const fetchPublishedCourses = async () => {
@@ -90,6 +93,48 @@ export default function CoursesContentOverView() {
       console.error("Error fetching published courses:", error);
     }
   };
+
+  const loadEnrolledCourses = () => {
+    const enrolled = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+    setEnrolledCourses(enrolled);
+
+    // Load course progress
+    const progress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
+    setCourseProgress(progress);
+  };
+
+  const enrollInCourse = (course: Course) => {
+    const enrolled = [...enrolledCourses];
+    if (!enrolled.find(c => c.id === course.id)) {
+      enrolled.push(course);
+      setEnrolledCourses(enrolled);
+      localStorage.setItem('enrolledCourses', JSON.stringify(enrolled));
+
+      // Initialize progress
+      const progress = { ...courseProgress };
+      progress[course.id] = { status: 'not_started' as const };
+      setCourseProgress(progress);
+      localStorage.setItem('courseProgress', JSON.stringify(progress));
+    }
+  };
+
+  const handleCourseAction = (course: Course) => {
+    const progress = courseProgress[course.id];
+    if (!progress || progress.status === 'not_started') {
+      // Start the course - navigate to first lesson
+      const updatedProgress = { ...courseProgress };
+      updatedProgress[course.id] = { status: 'in_progress', currentLesson: 0 };
+      setCourseProgress(updatedProgress);
+      localStorage.setItem('courseProgress', JSON.stringify(updatedProgress));
+
+      // Navigate to lesson viewer with first lesson
+      // For now, we'll use the course's content URL or a default
+      window.location.href = `/lesson/sui-move.mdx`;
+    } else if (progress.status === 'in_progress') {
+      // Continue from current lesson
+      window.location.href = `/lesson/sui-move.mdx`;
+    }
+  };
   return (
     <div className="flex bg-gray-900 text-white min-h-screen p-8">
   
@@ -102,7 +147,7 @@ export default function CoursesContentOverView() {
           <div className="grid grid-cols-3 gap-4 mb-8">
             <div className="bg-gray-800 p-4 rounded-lg shadow-md border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">All Categories</h3>
-              <p className="text-xl font-bold">{enrolledCourses}</p>
+              <p className="text-xl font-bold">{totalEnrolledCourses}</p>
             </div>
             <div className="bg-gray-800 p-4 rounded-lg shadow-md border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Difficulty</h3>
@@ -126,32 +171,43 @@ export default function CoursesContentOverView() {
               <div>Status</div>
               <div>Action</div>
             </div>
-            {yourCoursesData.map((course, index) => (
-              <div key={index} className="grid grid-cols-5 gap-4 items-center py-3 border-t border-gray-700">
-                <div>{course.course}</div>
-                <div>
-                  <div className="w-full bg-gray-700 rounded-full h-2.5">
-                    <div
-                      className="bg-green-500 h-2.5 rounded-full"
-                      style={{ width: `${course.progress / 10}%` }}
-                    ></div>
+            {enrolledCourses.length === 0 ? (
+              <p className="text-gray-400 text-center py-4">No enrolled courses yet. Enroll in a course to get started!</p>
+            ) : (
+              enrolledCourses.map((course) => {
+                const progress = courseProgress[course.id];
+                const isStarted = progress && progress.status !== 'not_started';
+                const buttonText = isStarted ? 'Continue' : 'Get Started';
+
+                return (
+                  <div key={course.id} className="grid grid-cols-5 gap-4 items-center py-3 border-t border-gray-700">
+                    <div>{course.title}</div>
+                    <div>
+                      <div className="w-full bg-gray-700 rounded-full h-2.5">
+                        <div
+                          className="bg-green-500 h-2.5 rounded-full"
+                          style={{ width: isStarted ? '25%' : '0%' }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>{isStarted ? '50' : '0'}</div>
+                    <div>{isStarted ? 'In Progress' : 'Not Started'}</div>
+                    <div>
+                      <button
+                        onClick={() => handleCourseAction(course)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium ${
+                          isStarted
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                      >
+                        {buttonText}
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div>{course.xpEarned}</div>
-                <div>{course.status}</div>
-                <div>
-                  <button
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      course.action === 'Continue' || course.action === 'Resume'
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
-                    }`}
-                  >
-                    {course.action}
-                  </button>
-                </div>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -179,7 +235,10 @@ export default function CoursesContentOverView() {
                     </div>
                     <div className="flex justify-between items-center">
                       <button className="text-indigo-400 hover:underline">Preview</button>
-                      <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium">
+                      <button
+                        onClick={() => enrollInCourse(course)}
+                        className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium"
+                      >
                         Enroll
                       </button>
                     </div>
