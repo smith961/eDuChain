@@ -37,6 +37,72 @@ export default function CoursesContentOverView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Enrollment quiz state
+  const [showEnrollmentQuiz, setShowEnrollmentQuiz] = useState(false);
+  const [selectedCourseForQuiz, setSelectedCourseForQuiz] = useState<Course | null>(null);
+  const [currentQuizQuestion, setCurrentQuizQuestion] = useState(0);
+  const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+
+  // Sui Move enrollment questions based on lesson content
+  const suiMoveEnrollmentQuestions = [
+    {
+      question: "What is the primary purpose of Move programming language?",
+      options: [
+        "Web development",
+        "Blockchain smart contracts",
+        "Mobile app development",
+        "Data analysis"
+      ],
+      correctAnswer: 1,
+      explanation: "Move was designed specifically for blockchain smart contracts with safety and security in mind."
+    },
+    {
+      question: "Which of these is a key feature of Move that prevents common programming errors?",
+      options: [
+        "Dynamic typing",
+        "Resource-oriented design",
+        "Garbage collection",
+        "Multi-threading"
+      ],
+      correctAnswer: 1,
+      explanation: "Move's resource-oriented design treats digital assets as resources that cannot be copied or implicitly discarded."
+    },
+    {
+      question: "In Sui Move, what does the 'key' ability allow a struct to do?",
+      options: [
+        "Be copied freely",
+        "Be used as a key in global storage",
+        "Be automatically deleted",
+        "Store multiple values"
+      ],
+      correctAnswer: 1,
+      explanation: "The 'key' ability allows a struct to be used as a key in Sui's global storage system."
+    },
+    {
+      question: "What is the difference between Sui Move and other Move implementations?",
+      options: [
+        "Sui uses an account-based model",
+        "Sui uses an object-based model",
+        "Sui doesn't support smart contracts",
+        "Sui uses JavaScript instead of Move"
+      ],
+      correctAnswer: 1,
+      explanation: "Sui uses an innovative object-based model instead of the traditional account-based model used in other Move implementations."
+    },
+    {
+      question: "Which Sui-specific feature allows flexible key-value storage on objects?",
+      options: [
+        "Shared Objects",
+        "Dynamic Fields",
+        "Generic Types",
+        "Error Handling"
+      ],
+      correctAnswer: 1,
+      explanation: "Dynamic Fields provide flexible key-value storage capabilities on Sui objects."
+    }
+  ];
+
   useEffect(() => {
     fetchPublishedCourses();
     if (user) {
@@ -96,6 +162,66 @@ export default function CoursesContentOverView() {
       return;
     }
 
+    // Show enrollment quiz for Sui Move courses
+    if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
+      setSelectedCourseForQuiz(course);
+      setShowEnrollmentQuiz(true);
+      setCurrentQuizQuestion(0);
+      setQuizAnswers([]);
+      setQuizCompleted(false);
+      return;
+    }
+
+    // Direct enrollment for other courses
+    await completeEnrollment(course);
+  };
+
+  const handleQuizAnswer = (answerIndex: number) => {
+    const newAnswers = [...quizAnswers, answerIndex];
+    setQuizAnswers(newAnswers);
+
+    if (currentQuizQuestion < suiMoveEnrollmentQuestions.length - 1) {
+      setCurrentQuizQuestion(currentQuizQuestion + 1);
+    } else {
+      // Quiz completed
+      setQuizCompleted(true);
+      evaluateQuiz(newAnswers);
+    }
+  };
+
+  const evaluateQuiz = (answers: number[]) => {
+    let correctAnswers = 0;
+    suiMoveEnrollmentQuestions.forEach((question, index) => {
+      if (answers[index] === question.correctAnswer) {
+        correctAnswers++;
+      }
+    });
+
+    const score = Math.round((correctAnswers / suiMoveEnrollmentQuestions.length) * 100);
+
+    if (score >= 60) { // 60% passing score
+      // Pass - proceed with enrollment
+      setTimeout(() => {
+        completeEnrollment(selectedCourseForQuiz!);
+      }, 2000); // Show results for 2 seconds
+    } else {
+      // Fail - show retry option
+      setTimeout(() => {
+        alert(`Quiz failed with ${score}%. You need 60% to enroll. Please try again.`);
+        resetQuiz();
+      }, 2000);
+    }
+  };
+
+  const resetQuiz = () => {
+    setShowEnrollmentQuiz(false);
+    setSelectedCourseForQuiz(null);
+    setCurrentQuizQuestion(0);
+    setQuizAnswers([]);
+    setQuizCompleted(false);
+  };
+
+  const completeEnrollment = async (course: Course) => {
     try {
       // TODO: Replace with actual API call when enrollment system is implemented
       // const response = await apiService.enrollInCourse(course.id.toString());
@@ -113,6 +239,9 @@ export default function CoursesContentOverView() {
         setCourseProgress(progress);
         localStorage.setItem('courseProgress', JSON.stringify(progress));
       }
+
+      // Reset quiz state
+      resetQuiz();
     } catch (error) {
       console.error('Enrollment failed:', error);
       alert('Failed to enroll in course');
@@ -341,6 +470,78 @@ export default function CoursesContentOverView() {
           </ul>
         </div>
       </div>
+
+      {/* Enrollment Quiz Modal */}
+      {showEnrollmentQuiz && selectedCourseForQuiz && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Course Enrollment Assessment
+              </h2>
+              <p className="text-gray-600">
+                Answer these questions to enroll in: <strong>{selectedCourseForQuiz.title}</strong>
+              </p>
+            </div>
+
+            {!quizCompleted ? (
+              <div>
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm text-gray-500">
+                      Question {currentQuizQuestion + 1} of {suiMoveEnrollmentQuestions.length}
+                    </span>
+                    <div className="w-full bg-gray-200 rounded-full h-2 ml-4">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${((currentQuizQuestion + 1) / suiMoveEnrollmentQuestions.length) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {suiMoveEnrollmentQuestions[currentQuizQuestion].question}
+                  </h3>
+
+                  <div className="space-y-3">
+                    {suiMoveEnrollmentQuestions[currentQuizQuestion].options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleQuizAnswer(index)}
+                        className="w-full p-4 text-left border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+                      >
+                        <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="mb-6">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h3 className="text-xl font-bold text-green-600 mb-2">Quiz Completed!</h3>
+                  <p className="text-gray-600">
+                    Evaluating your answers...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mt-6 pt-4 border-t">
+              <button
+                onClick={resetQuiz}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <div className="text-sm text-gray-500">
+                Passing Score: 60%
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
