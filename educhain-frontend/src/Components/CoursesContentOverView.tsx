@@ -1,5 +1,20 @@
 
 
+import React, { useState, useEffect } from "react";
+import { useSuiClient } from "@mysten/dapp-kit";
+import { SuiObjectData } from "@mysten/sui/client";
+
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  category: string;
+  difficulty_level: number;
+  estimated_duration: number;
+  objectId: string;
+}
+
 const enrolledCourses = 8;
 const inProgressCourses = 4;
 const completedCourses = 6;
@@ -11,35 +26,70 @@ const yourCoursesData = [
   { course: 'DAO Governance', progress: 1, xpEarned: 1050, status: 'Completed', action: 'View' },
 ];
 
-const discoverCoursesData = [
-  {
-    title: 'Smart Contracts 101',
-    description: 'Beginner - 1h',
-    type: 'Enroll',
-    imageUrl: 'https://res.cloudinary.com/dkrpginfm/image/upload/v1756946420/er_sqqc8m.png',
-  },
-  {
-    title: 'Advanced Solidity Patterns',
-    description: 'Intermediate - 2h',
-    type: 'Purchase',
-    imageUrl: 'https://res.cloudinary.com/dkrpginfm/image/upload/v1756946421/error_k3nrwt.png',
-  },
-  {
-    title: 'DeFi Mechanics',
-    description: 'Beginner - 7h',
-    type: 'Enroll',
-    imageUrl: 'https://res.cloudinary.com/dkrpginfm/image/upload/v1756946422/error1_rauo3s.png',
-  },
-  {
-    title: 'DAO Governance',
-    description: 'Advanced - 6h',
-    type: 'Purchase',
-    imageUrl: 'https://res.cloudinary.com/dkrpginfm/image/upload/v1756946423/error3_ooxdb6.png',
-  },
-];
-
-
 export default function CoursesContentOverView() {
+  const suiClient = useSuiClient();
+  const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    fetchPublishedCourses();
+  }, []);
+
+  const fetchPublishedCourses = async () => {
+    try {
+      const publishedCourseIds = JSON.parse(localStorage.getItem('publishedCourses') || '[]');
+
+      if (publishedCourseIds.length === 0) {
+        setPublishedCourses([]);
+        return;
+      }
+
+      const packagedId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
+
+      const courseData: Course[] = await Promise.all(
+        publishedCourseIds.map(async (courseId: string) => {
+          const obj = await suiClient.getObject({
+            id: courseId,
+            options: {
+              showType: true,
+              showContent: true,
+              showDisplay: true,
+            },
+          });
+
+          const data = obj.data as SuiObjectData;
+          const content = (
+            data as SuiObjectData & {
+              content?: { fields?: Record<string, unknown> };
+            }
+          )?.content;
+
+          const fields = content?.fields || {};
+
+          const title = (fields.title as string) || "Untitled";
+          const description = (fields.description as string) || "No description";
+          const instructor = (fields.instructor as string) || "Unknown";
+          const category = (fields.category as string) || "Uncategorized";
+          const difficulty_level = (fields.difficulty_level as number) || 1;
+          const estimated_duration = (fields.estimated_duration as number) || 0;
+
+          return {
+            id: courseId,
+            title,
+            description,
+            instructor,
+            category,
+            difficulty_level,
+            estimated_duration,
+            objectId: courseId,
+          };
+        })
+      );
+
+      setPublishedCourses(courseData);
+    } catch (error) {
+      console.error("Error fetching published courses:", error);
+    }
+  };
   return (
     <div className="flex bg-gray-900 text-white min-h-screen p-8">
   
@@ -113,31 +163,30 @@ export default function CoursesContentOverView() {
             <div className="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">Price</div>
           </div>
           <div className="grid grid-cols-2 gap-6">
-            {discoverCoursesData.map((course, index) => (
-              <div key={index} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 overflow-hidden">
-                <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-500 overflow-hidden">
-                   <img
-                    src={course.imageUrl}
-                    alt={course.title}
-                    className="object-cover w-full h-full"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold">{course.title}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{course.description}</p>
-                  <div className="flex justify-between items-center">
-                    <button className="text-indigo-400 hover:underline">Preview</button>
-                    <button
-                      className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        course.type === 'Enroll' ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'
-                      }`}
-                    >
-                      {course.type}
-                    </button>
+            {publishedCourses.length === 0 ? (
+              <p className="text-gray-400 col-span-2 text-center">No published courses available yet.</p>
+            ) : (
+              publishedCourses.map((course) => (
+                <div key={course.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 overflow-hidden">
+                  <div className="w-full h-40 bg-gray-700 flex items-center justify-center text-gray-500">
+                    <span>Course Image</span>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-semibold">{course.title}</h3>
+                    <p className="text-gray-400 text-sm mb-4">{course.description}</p>
+                    <div className="text-xs text-gray-500 mb-2">
+                      Difficulty: {course.difficulty_level} | Duration: {course.estimated_duration} min
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <button className="text-indigo-400 hover:underline">Preview</button>
+                      <button className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium">
+                        Enroll
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ interface FormInputProps {
   required?: boolean;
   className?: string;
   children?: React.ReactNode;
+  min?: number;
 }
 
 interface Course {
@@ -43,6 +44,7 @@ const FormInput: React.FC<FormInputProps> = ({
   required = false,
   className = "",
   children,
+  min,
   ...props
 }) => (
   <div>
@@ -85,6 +87,7 @@ const FormInput: React.FC<FormInputProps> = ({
         required={required}
         className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${className}`}
         placeholder={placeholder}
+        min={type === "number" ? min : undefined}
         {...props}
 
       />
@@ -112,6 +115,16 @@ const CourseCreationForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create course");
 
   const [courses, setCourses] = useState<Course[]>([]);
+
+  const [showLessonModal, setShowLessonModal] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [lessonForm, setLessonForm] = useState({
+    title: '',
+    content_type: '',
+    content_url: '',
+    duration: 0,
+    order_index: 0,
+  });
   
 
   
@@ -145,6 +158,16 @@ const CourseCreationForm: React.FC = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: name === "difficulty_level" || name === "estimated_duration" ? parseInt(value) : value,
+    }));
+  };
+
+  const handleLessonInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setLessonForm((prev) => ({
+      ...prev,
+      [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
     }));
   };
   const isValidSuiAddress = (address: string): boolean => {
@@ -204,7 +227,6 @@ const CourseCreationForm: React.FC = () => {
       const result = await signAndExecute({ transaction: tx });
 
       console.log("✅ Transaction success:", result);
-      console.log("DEBUG: Transaction digest:", result.digest);
 
       // Get full transaction details to extract created objects
       const txDetails = await suiClient.getTransactionBlock({
@@ -214,26 +236,22 @@ const CourseCreationForm: React.FC = () => {
           showObjectChanges: true,
         },
       });
-      console.log("DEBUG: Full transaction details:", txDetails);
 
       // Extract created course ID from objectChanges
       const objectChanges = txDetails.objectChanges || [];
-      console.log("DEBUG: Object changes:", objectChanges);
       const createdCourse = objectChanges.find((change: any) =>
         change.type === 'created' && change.objectType?.includes('::educhain::Course')
       );
       if (createdCourse) {
         const courseId = createdCourse.objectId;
-        console.log("DEBUG: Created course ID:", courseId);
 
         // Store course ID in localStorage
         const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
-        console.log("DEBUG: Existing stored IDs:", storedCourseIds);
         storedCourseIds.push(courseId);
         localStorage.setItem('createdCourseIds', JSON.stringify(storedCourseIds));
-        console.log("DEBUG: Updated stored IDs:", storedCourseIds);
-      } else {
-        console.log("DEBUG: No created course found in object changes");
+
+        // Also store as published if it's published (but since we just created, it's not yet)
+        // We'll handle publishing separately
       }
 
       alert("🎉 Course created successfully on-chain!");
@@ -247,10 +265,113 @@ const CourseCreationForm: React.FC = () => {
     setActiveTab("view courses");
   };
 
+  const handleAddLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!account || !selectedCourse) {
+      alert("Please connect wallet and select a course");
+      return;
+    }
+
+    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
+    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
+    setLoading(true);
+
+    try {
+      const tx = new Transaction();
+
+      if (!ADMIN_CAP_ID) {
+        throw new Error("Admin Cap ID not configured");
+      }
+
+      tx.moveCall({
+        target: `${packageId}::educhain::add_lesson`,
+        arguments: [
+          tx.object(ADMIN_CAP_ID),
+          tx.object(selectedCourse.objectId),
+          tx.pure.string(lessonForm.title),
+          tx.pure.string(lessonForm.content_type),
+          tx.pure.string(lessonForm.content_url),
+          tx.pure.u64(lessonForm.duration),
+          tx.pure.u64(lessonForm.order_index),
+        ],
+      });
+
+      const result = await signAndExecute({ transaction: tx });
+
+      console.log("✅ Add lesson success:", result);
+      alert("Lesson added successfully!");
+
+      // Reset form and close modal
+      setLessonForm({
+        title: '',
+        content_type: '',
+        content_url: '',
+        duration: 0,
+        order_index: 0,
+      });
+      setShowLessonModal(false);
+      setSelectedCourse(null);
+
+      // Refetch courses to update the list
+      fetchCourses();
+    } catch (err) {
+      console.error("❌ Add lesson failed:", err);
+      alert("Failed to add lesson. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublishCourse = async (course: Course) => {
+    if (!account) {
+      alert("Please connect wallet");
+      return;
+    }
+
+    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
+    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
+    setLoading(true);
+
+    try {
+      const tx = new Transaction();
+
+      if (!ADMIN_CAP_ID) {
+        throw new Error("Admin Cap ID not configured");
+      }
+
+      tx.moveCall({
+        target: `${packageId}::educhain::publish_course`,
+        arguments: [
+          tx.object(ADMIN_CAP_ID),
+          tx.object(course.objectId),
+        ],
+      });
+
+      const result = await signAndExecute({ transaction: tx });
+
+      console.log("✅ Publish course success:", result);
+      alert("Course published successfully!");
+
+      // Store published course ID in localStorage
+      const publishedCourseIds = JSON.parse(localStorage.getItem('publishedCourses') || '[]');
+      if (!publishedCourseIds.includes(course.objectId)) {
+        publishedCourseIds.push(course.objectId);
+        localStorage.setItem('publishedCourses', JSON.stringify(publishedCourseIds));
+      }
+
+      // Refetch courses to update the list
+      fetchCourses();
+    } catch (err) {
+      console.error("❌ Publish course failed:", err);
+      alert("Failed to publish course. Check console for details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchCourses = async () => {
-    console.log("DEBUG: fetchCourses called");
     if(!account?.address) {
-      console.log("DEBUG: No account address, returning");
       return;
     }
 
@@ -258,11 +379,8 @@ const CourseCreationForm: React.FC = () => {
     try{
       // Get stored course IDs from localStorage
       const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
-      console.log("DEBUG: Stored course IDs from localStorage:", storedCourseIds);
-      console.log("DEBUG: localStorage item:", localStorage.getItem('createdCourseIds'));
 
       if (storedCourseIds.length === 0) {
-        console.log("DEBUG: No stored course IDs, setting empty courses");
         setCourses([]);
         return;
       }
@@ -271,12 +389,10 @@ const CourseCreationForm: React.FC = () => {
       const structType = packagedId
       ? `${packagedId}::educhain::Course`
       : undefined;
-      console.log("DEBUG: packageId:", packagedId, "structType:", structType);
 
       // Fetch each course object by ID
       const courseData: Course[] = await Promise.all(
         storedCourseIds.map(async (courseId: string) => {
-          console.log("DEBUG: Fetching course:", courseId);
           const obj = await suiClient.getObject({
             id: courseId,
             options: {
@@ -314,7 +430,6 @@ const CourseCreationForm: React.FC = () => {
           };
         })
       );
-      console.log("DEBUG: Processed course data:", courseData);
 
       setCourses(courseData);
     } catch (error) {
@@ -333,12 +448,7 @@ const CourseCreationForm: React.FC = () => {
   // }, [account?.address]);
 
   useEffect(() => {
-    console.log("DEBUG: Courses state updated:", courses);
-  }, [courses]);
-
-  useEffect(() => {
     if (activeTab === "view courses") {
-      console.log("DEBUG: Switched to view courses tab, fetching courses");
       fetchCourses();
     }
   }, [activeTab]);
@@ -515,10 +625,7 @@ const CourseCreationForm: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => {
-            console.log("DEBUG: Refresh button clicked");
-            fetchCourses();
-          }}
+          onClick={fetchCourses}
           disabled={loading}
           className="bg-black flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
         >
@@ -541,11 +648,29 @@ const CourseCreationForm: React.FC = () => {
               <div key={course.id} className="bg-white border border-gray-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{course.title}</h3>
                 <p className="text-gray-600 mb-4">{course.description}</p>
-                <div className="text-sm text-gray-500 space-y-1">
+                <div className="text-sm text-gray-500 space-y-1 mb-4">
                   <p><strong>Instructor:</strong> {course.instructor}</p>
                   <p><strong>Category:</strong> {course.category}</p>
                   <p><strong>Difficulty:</strong> {course.difficulty_level}</p>
                   <p><strong>Duration:</strong> {course.estimated_duration} minutes</p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedCourse(course);
+                      setShowLessonModal(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                  >
+                    Add Lesson
+                  </button>
+                  <button
+                    onClick={() => handlePublishCourse(course)}
+                    disabled={loading}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
+                  >
+                    Publish
+                  </button>
                 </div>
               </div>
             ))}
@@ -555,12 +680,96 @@ const CourseCreationForm: React.FC = () => {
             </div>
           </div>
         </div>
+)}
 
-      )}
-    </>
+{/* Lesson Addition Modal */}
+{showLessonModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <h2 className="text-xl font-bold mb-4">Add Lesson to {selectedCourse?.title}</h2>
+      <form onSubmit={handleAddLesson} className="space-y-4">
+        <FormInput
+          label="Lesson Title"
+          id="lesson_title"
+          name="title"
+          value={lessonForm.title}
+          onChange={handleLessonInputChange}
+          required
+          placeholder="e.g., Introduction to React"
+        />
+
+        <FormInput
+          label="Content Type"
+          id="content_type"
+          name="content_type"
+          type="select"
+          value={lessonForm.content_type}
+          onChange={handleLessonInputChange}
+          required
+        >
+          <option value="" disabled>Select content type</option>
+          <option value="Video">Video</option>
+          <option value="Text">Text</option>
+          <option value="Document">Document</option>
+        </FormInput>
+
+        <FormInput
+          label="Content URL"
+          id="content_url"
+          name="content_url"
+          value={lessonForm.content_url}
+          onChange={handleLessonInputChange}
+          required
+          placeholder="https://example.com/content"
+        />
+
+        <FormInput
+          label="Duration (minutes)"
+          id="duration"
+          name="duration"
+          type="number"
+          value={lessonForm.duration}
+          onChange={handleLessonInputChange}
+          required
+          min={0}
+        />
+
+        <FormInput
+          label="Order Index"
+          id="order_index"
+          name="order_index"
+          type="number"
+          value={lessonForm.order_index}
+          onChange={handleLessonInputChange}
+          required
+          min={0}
+        />
+
+        <div className="flex gap-2 mt-6">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium disabled:opacity-50"
+          >
+            {loading ? "Adding..." : "Add Lesson"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowLessonModal(false)}
+            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+</>
 
 
-  );
+);
 };
 
 export default CourseCreationForm;
