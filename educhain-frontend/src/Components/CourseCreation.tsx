@@ -122,12 +122,9 @@ const CourseCreationForm: React.FC = () => {
     title: '',
     content_type: '',
     content_url: '',
-    selected_content: '',
     duration: 0,
     order_index: 0,
   });
-
-  const [availableLessons, setAvailableLessons] = useState<string[]>([]);
   
 
   
@@ -168,19 +165,10 @@ const CourseCreationForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setLessonForm((prev) => {
-      const updatedForm = {
-        ...prev,
-        [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
-      };
-
-      // If lesson content is selected, automatically set the content URL
-      if (name === "selected_content" && value) {
-        updatedForm.content_url = `/lesson/${value}`;
-      }
-
-      return updatedForm;
-    });
+    setLessonForm((prev) => ({
+      ...prev,
+      [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
+    }));
   };
   const isValidSuiAddress = (address: string): boolean => {
     return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
@@ -319,7 +307,6 @@ const CourseCreationForm: React.FC = () => {
         title: '',
         content_type: '',
         content_url: '',
-        selected_content: '',
         duration: 0,
         order_index: 0,
       });
@@ -465,25 +452,9 @@ const CourseCreationForm: React.FC = () => {
       fetchCourses();
     }
   }, [activeTab]);
-
-  useEffect(() => {
-    // Load available lesson content files
-    loadAvailableLessons();
-  }, []);
-
-  const loadAvailableLessons = async () => {
-    try {
-      // For now, we'll hardcode the available lessons
-      // In a real app, you might fetch this from an API or scan the folder
-      const lessons = ['sui-move.mdx'];
-      setAvailableLessons(lessons);
-    } catch (error) {
-      console.error('Error loading available lessons:', error);
-    }
-  };
   return (
     <>
-      {activeTab === "create course" ? (
+      {  activeTab === "create course" ? (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
             <div className="text-center mb-10">
@@ -709,6 +680,7 @@ const CourseCreationForm: React.FC = () => {
             </div>
           </div>
         </div>
+        
 )}
 
 {/* Lesson Addition Modal */}
@@ -743,29 +715,13 @@ const CourseCreationForm: React.FC = () => {
         </FormInput>
 
         <FormInput
-          label="Lesson Content"
-          id="selected_content"
-          name="selected_content"
-          type="select"
-          value={lessonForm.selected_content}
-          onChange={handleLessonInputChange}
-          required
-        >
-          <option value="" disabled>Select lesson content</option>
-          {availableLessons.map((lesson) => (
-            <option key={lesson} value={lesson}>
-              {lesson.replace('.mdx', '').replace('-', ' ').toUpperCase()}
-            </option>
-          ))}
-        </FormInput>
-
-        <FormInput
           label="Content URL"
           id="content_url"
           name="content_url"
           value={lessonForm.content_url}
           onChange={handleLessonInputChange}
-          placeholder="Or enter custom URL"
+          required
+          placeholder="https://example.com/content"
         />
 
         <FormInput
