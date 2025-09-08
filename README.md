@@ -1,154 +1,337 @@
-EduChain: A Decentralized Web3 Learning Platform 🎓
-===================================================
-
-**Product Requirements Document (PRD)**
-
-* * * * *
-
-**1\. Platform Overview**
--------------------------
-
-EduChain is a gamified Web3 learning platform that transforms education into an engaging and rewarding experience. By leveraging blockchain technology, we are creating a decentralized ecosystem where verifiable credentials, transparent rewards, and true knowledge ownership are the new standard. Learners earn **Experience Points (XP)** ✨ for their progress, which can be redeemed for premium educational content and digital assets. Our mission is to bridge the global education gap by making high-quality learning accessible, transparent, and user-centric 🌍.
-
-* * * * *
-
-**2\. Core Product Requirements (Must-Haves) ✅**
-------------------------------------------------
-
-### **2.1. User & Identity Management**
-
--   **Decentralized Identity (DID):** Secure registration and login using decentralized identifiers 🔐.
-
--   **Web3 Wallet Integration:** Seamless authentication and transaction signing via wallets like MetaMask and Sui-compatible wallets 🦊.
-
--   **Role-Based Access Control:** Delineate user roles for learners, mentors, and administrators 🔑.
-
--   **User Profiles:** Dynamic profiles with transparent XP tracking and activity history 📊.
-
-### **2.2. Learning Content & Infrastructure**
-
--   **Content Management System:** A robust system for creating, uploading, and managing courses, quizzes, and modules 📚.
-
--   **Multimedia Support:** Enable diverse content types including videos 🎬, documents 📄, and interactive lessons.
-
--   **Blockchain Timestamping:** Secure copyright protection for all educational materials via immutable timestamps ✍️.
-
--   **Version Control:** A mechanism to manage and deploy content updates efficiently 🔄.
-
-### **2.3. Gamification & Rewards**
-
--   **XP System:** Award experience points for milestones, quizzes, and course completion, with on-chain transparency 💎.
-
--   **Redemption System:** Allow users to redeem XP for paid courses and unique digital assets 🎁.
-
--   **NFT Achievements:** Mint leaderboards 🏆 and achievement badges as NFTs to incentivize and recognize learner accomplishments.
-
--   **Real-time Progress:** Provide instant feedback and progress tracking to maintain learner motivation 📈.
-
-### **2.4. Blockchain Foundation**
-
--   **Private & Consortium Blockchains:** Utilize these for secure data validation and scalable operations.
-
--   **Smart Contracts:** Core logic for XP issuance, rewards, and program purchases will be governed by immutable smart contracts 📜.
-
--   **Decentralized Credentials:** Issue tamper-proof certificates and credentials as NFTs or verifiable credentials 🛡️.
-
--   **Off-Chain Storage:** Integrate with **IPFS** for secure, decentralized storage of large multimedia files 💾.
-
-### **2.5. Enrollment & Payments**
-
--   **Course Enrollment:** Manage both free and paid courses 💸.
-
--   **Crypto Payment Gateways:** Facilitate course purchases using cryptocurrencies 💰.
-
--   **Automated Certificates:** Instant issuance of verifiable digital certificates upon course completion 🎓.
-
-### **2.6. User Interface & Experience (UI/UX)**
-
--   **Intuitive & Accessible Design:** A simple, cross-platform interface for web and mobile 📱.
-
--   **Role-Specific Dashboards:** Dedicated dashboards for learners (progress, rewards) and mentors (mentee tracking) 💻.
-
--   **Multi-language Support:** Cater to a global audience 🗣️.
-
-### **2.7. Security & Compliance**
-
--   **End-to-End Encryption:** Protect all user data 🔒.
-
--   **Privacy Regulations:** Ensure compliance with GDPR and other global privacy laws ⚖️.
-
--   **Secure Key Management:** Implement robust security for blockchain keys and wallet integrations 🔑.
-
--   **Audit Trails:** Maintain comprehensive on-chain and off-chain audit trails for all transactions 🔎.
-
-* * * * *
-
-**3\. Important Enhancements (Should-Haves) 👍**
-------------------------------------------------
-
--   **Adaptive Learning Paths:** AI-driven personalization based on user behavior 🤖.
-
--   **Collaborative Tools:** Integrated forums, peer review, and group project features 🤝.
-
--   **Social & Community:** Enable social sharing of achievements and foster a vibrant community through events and competitions 📢.
-
--   **Advanced Analytics:** Detailed learner performance and platform usage analytics 📈.
-
--   **Scalability & Performance:** Ensure the platform can support massive growth with low latency 🚀.
-
-* * * * *
-
-**4\. Future-Proofing (Can-Haves) ✨**
--------------------------------------
-
--   **Multi-Chain Interoperability:** Support for other blockchains like Ethereum and Polkadot 🔗.
-
--   **On-Chain Marketplace:** A freelance and career marketplace for learners 💼.
-
--   **AI-Powered Tutors:** Automated assistance for course queries 🧠.
-
--   **AR/VR Integration:** Immersive learning simulations 🥽.
-
--   **NFT Collectibles:** Monetize educational content through a unique NFT marketplace 🖼️.
-
-* * * * *
-
-**5\. Technical Strategy & Optimizations**
-------------------------------------------
-
-### **5.1. Sui Blockchain & Move Language**
-
-Our platform will be built on the **Sui blockchain** to leverage its exceptional throughput, low latency, and object-centric architecture ⚡️.
-
--   **Move Smart Contracts:** All core logic---XP issuance, rewards, credentials---will be developed using **Move**, Sui's native programming language. This ensures enhanced safety, efficiency, and resource management 💪.
-
--   **Sui Object Model:** User profiles, courses, XP tokens, and NFTs will be represented as Move objects, enabling highly efficient parallel transaction execution and minimizing conflicts ⚙️.
-
-### **5.2. System Architecture**
-
--   **Off-Chain Storage:** Large multimedia files will be stored on decentralized storage solutions like **IPFS or Arweave**, with their hashes linked on-chain via Move objects for integrity 🔗.
-
--   **Frontend Integration:** The web and mobile frontends will be hosted on scalable cloud infrastructure (AWS, Azure) and will interact with the Sui network using the official Sui SDKs 💻.
-
--   **Wallet Integration:** We will support all major Sui-compatible wallets (e.g., Sui Wallet, Pontem Wallet) for a seamless user experience 👍.
-
-### **5.3. Security & Reliability**
-
--   **High-Performance UX:** Sui's fast transaction confirmations and low gas fees will provide real-time feedback for gamification features 🚀.
-
--   **Secure Administration:** Multi-signature and role-based authorization will be implemented using Sui's governance capabilities to secure administrative functions 🛡️.
-
--   **CI/CD Pipeline:** A robust pipeline will be maintained to support continuous development, testing, and secure deployment of Move smart contracts 🧪.
-
--   **Monitoring:** We will utilize Sui explorer tools and custom monitoring to ensure network health and platform reliability 📊.
-
-* * * * *
-
-**6\. Conclusion & Roadmap**
-----------------------------
-
-This PRD outlines a comprehensive, scalable, and secure platform designed to deliver an exceptional Web3 educational experience ✨. By focusing on the core requirements first, we will establish a robust and reliable foundation 🏗️. Our use of the Sui blockchain and its **Move** programming language will give us a distinct advantage in performance, efficiency, and security 🛡️.
-
-As we move forward, we'll prioritize the "Should-Haves" to enhance platform value and user engagement before we tackle the "Can-Haves" 👍. This phased approach will allow us to build a strong community and a stable product 🚀. The EduChain platform is poised to redefine education by putting learners at the center of a decentralized, transparent, and rewarding ecosystem 🎓.
-
-This document will serve as our guiding star 🌟 as we transform this vision into a reality.
+# EduChain - Decentralized Learning Platform
+
+A comprehensive blockchain-based education platform built with React, Express.js, MySQL, and Sui blockchain.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js (v16+)
+- MySQL (v8.0+)
+- Git
+
+### 1. Clone the Repository
+```bash
+git clone <your-repo-url>
+cd educhain
+```
+
+### 2. Run Setup Script
+```bash
+# For first-time setup (includes dependencies)
+chmod +x setup.sh
+./setup.sh
+
+# For team members (after cloning)
+chmod +x scripts/setup-team.sh
+./scripts/setup-team.sh
+```
+
+### 3. Configure Environment
+```bash
+# Backend configuration
+cp backend/.env.example backend/.env
+# Edit backend/.env with your settings
+
+# Frontend configuration
+cp educhain-frontend/.env.example educhain-frontend/.env
+# Edit educhain-frontend/.env with your settings
+```
+
+### 4. Start Development Servers
+```bash
+# Terminal 1: Backend
+cd backend
+npm run migrate  # Setup database
+npm run dev
+
+# Terminal 2: Frontend
+cd educhain-frontend
+npm run dev
+```
+
+### 5. Verify Setup
+```bash
+# Check if everything is working
+./scripts/health-check.sh
+```
+
+## 🏗️ Project Structure
+
+```
+educhain/
+├── backend/                 # Express.js API server
+│   ├── src/
+│   │   ├── controllers/     # Route handlers
+│   │   ├── models/         # Database models
+│   │   ├── routes/         # API routes
+│   │   ├── middleware/     # Custom middleware
+│   │   └── utils/          # Helper functions
+│   ├── scripts/            # Database migrations
+│   └── .env.example        # Environment template
+├── educhain-frontend/      # React frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── contexts/       # React contexts
+│   │   ├── services/       # API services
+│   │   └── utils/          # Helper functions
+│   └── .env.example        # Environment template
+├── sources/                # Sui Move contracts
+├── tests/                  # Contract tests
+└── setup.sh               # Setup automation
+```
+
+## 🔧 Environment Setup
+
+### Backend (.env)
+```env
+# Server
+PORT=3001
+NODE_ENV=development
+
+# Database
+DB_HOST=localhost
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
+DB_NAME=educhain_db
+
+# JWT
+JWT_SECRET=your_super_secret_key
+JWT_EXPIRE=7d
+
+# Blockchain
+SUI_RPC_URL=https://fullnode.testnet.sui.io:443
+PACKAGE_ID=your_package_id
+ADMIN_CAP_ID=your_admin_cap_id
+REGISTRY_ID=your_registry_id
+```
+
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:3001/api
+VITE_SUI_RPC_URL=https://fullnode.testnet.sui.io:443
+VITE_PACKAGE_ID=your_package_id
+VITE_ADMIN_CAP_ID=your_admin_cap_id
+VITE_EDUCHAINRegistry=your_registry_id
+```
+
+## 🛠️ Development Tools
+
+### Health Check
+```bash
+# Verify all services are running
+./scripts/health-check.sh
+```
+
+### Team Setup
+```bash
+# For new team members
+./scripts/setup-team.sh
+```
+
+## 🤝 Team Collaboration Guide
+
+### Git Workflow
+
+#### 1. Branch Strategy
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Create bug fix branch
+git checkout -b bugfix/issue-description
+
+# Create hotfix branch
+git checkout -b hotfix/critical-fix
+```
+
+#### 2. Commit Convention
+```bash
+# Feature commits
+git commit -m "feat: add user authentication"
+
+# Bug fixes
+git commit -m "fix: resolve wallet connection issue"
+
+# Documentation
+git commit -m "docs: update API documentation"
+
+# Refactoring
+git commit -m "refactor: optimize database queries"
+```
+
+#### 3. Pull Request Process
+1. **Create PR** from your feature branch to `main`
+2. **Add description** with:
+   - What was changed
+   - Why it was changed
+   - How to test
+3. **Request review** from team members
+4. **Address feedback** and make necessary changes
+5. **Merge** after approval
+
+### Environment Setup for Team Members
+
+#### New Team Member Setup
+```bash
+# 1. Clone repository
+git clone <repo-url>
+cd educhain
+
+# 2. Run setup script
+./setup.sh
+
+# 3. Configure environment
+cp backend/.env.example backend/.env
+cp educhain-frontend/.env.example educhain-frontend/.env
+
+# 4. Edit .env files with personal credentials
+# - Database credentials
+# - JWT secret
+# - API keys (if any)
+
+# 5. Install dependencies
+cd backend && npm install
+cd ../educhain-frontend && npm install
+
+# 6. Setup database
+cd ../backend
+npm run migrate
+
+# 7. Start development
+npm run dev &
+cd ../educhain-frontend && npm run dev
+```
+
+### Database Setup
+```bash
+# Create MySQL database
+mysql -u root -p
+CREATE DATABASE educhain_db;
+EXIT;
+
+# Run migrations
+cd backend
+npm run migrate
+```
+
+## 🔒 Security & Best Practices
+
+### Environment Variables
+- ✅ **Never commit** `.env` files to Git
+- ✅ **Use strong secrets** for JWT and database passwords
+- ✅ **Document required** environment variables
+- ✅ **Provide examples** in `.env.example` files
+
+### API Testing
+```bash
+# Backend must be running for API testing
+cd backend && npm run dev
+
+# Test endpoints
+curl http://localhost:3001/health
+curl http://localhost:3001/api/courses/published
+```
+
+### Database Management
+```bash
+# Run migrations
+npm run migrate
+
+# Reset database (development only)
+mysql -u root -p educhain_db < reset.sql
+```
+
+## 🚀 Deployment
+
+### Development
+```bash
+# Backend
+cd backend && npm run dev
+
+# Frontend
+cd educhain-frontend && npm run dev
+```
+
+### Production
+```bash
+# Backend
+cd backend && npm start
+
+# Frontend (after build)
+cd educhain-frontend
+npm run build
+npm run preview
+```
+
+## 📚 API Documentation
+
+### Authentication
+- `POST /api/auth/login` - User login
+- `GET /api/auth/profile` - Get user profile
+- `PUT /api/auth/profile` - Update profile
+
+### Courses
+- `GET /api/courses/published` - Get published courses
+- `GET /api/courses/:id` - Get course details
+
+### Development
+- `GET /health` - Health check
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Backend Won't Start
+```bash
+# Check if port is available
+lsof -i :3001
+
+# Check database connection
+cd backend && npm run migrate
+```
+
+#### Frontend API Errors
+```bash
+# Ensure backend is running
+curl http://localhost:3001/health
+
+# Check API URL in frontend .env
+cat educhain-frontend/.env
+```
+
+#### Database Connection Issues
+```bash
+# Test MySQL connection
+mysql -u your_user -p -h localhost educhain_db
+
+# Reset database
+cd backend && npm run migrate
+```
+
+## 📞 Support
+
+- **Issues**: Create GitHub issues for bugs/features
+- **Discussions**: Use GitHub discussions for questions
+- **Documentation**: Update this README for improvements
+
+## 📋 Development Checklist
+
+### Before Pushing Code
+- [ ] Run tests: `npm test`
+- [ ] Lint code: `npm run lint`
+- [ ] Update documentation
+- [ ] Test API endpoints
+- [ ] Check environment variables
+
+### Before Merging to Main
+- [ ] Code review completed
+- [ ] All tests passing
+- [ ] Documentation updated
+- [ ] Environment variables documented
+- [ ] Migration scripts tested
+
+---
+
+**Happy coding! 🎓🚀**
+
+For detailed API documentation, see `backend/README.md` and `educhain-frontend/README.md`.

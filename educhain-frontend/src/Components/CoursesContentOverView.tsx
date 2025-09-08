@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useSuiClient } from "@mysten/dapp-kit";
 import { SuiObjectData } from "@mysten/sui/client";
+import { apiService } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 interface Course {
   id: string;
@@ -28,93 +30,83 @@ const yourCoursesData = [
 
 export default function CoursesContentOverView() {
   const suiClient = useSuiClient();
+  const { user } = useAuth();
   const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [courseProgress, setCourseProgress] = useState<{[key: string]: {status: 'not_started' | 'in_progress' | 'completed', currentLesson?: number}}>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPublishedCourses();
-    loadEnrolledCourses();
-  }, []);
+    if (user) {
+      loadEnrolledCourses();
+    }
+  }, [user]);
 
   const fetchPublishedCourses = async () => {
     try {
-      const publishedCourseIds = JSON.parse(localStorage.getItem('publishedCourses') || '[]');
+      setIsLoading(true);
+      setError(null);
 
-      if (publishedCourseIds.length === 0) {
-        setPublishedCourses([]);
-        return;
+      const response = await apiService.getPublishedCourses();
+
+      if (response.success) {
+        setPublishedCourses(response.courses);
+      } else {
+        setError('Failed to load courses');
       }
-
-      const packagedId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-
-      const courseData: Course[] = await Promise.all(
-        publishedCourseIds.map(async (courseId: string) => {
-          const obj = await suiClient.getObject({
-            id: courseId,
-            options: {
-              showType: true,
-              showContent: true,
-              showDisplay: true,
-            },
-          });
-
-          const data = obj.data as SuiObjectData;
-          const content = (
-            data as SuiObjectData & {
-              content?: { fields?: Record<string, unknown> };
-            }
-          )?.content;
-
-          const fields = content?.fields || {};
-
-          const title = (fields.title as string) || "Untitled";
-          const description = (fields.description as string) || "No description";
-          const instructor = (fields.instructor as string) || "Unknown";
-          const category = (fields.category as string) || "Uncategorized";
-          const difficulty_level = (fields.difficulty_level as number) || 1;
-          const estimated_duration = (fields.estimated_duration as number) || 0;
-
-          return {
-            id: courseId,
-            title,
-            description,
-            instructor,
-            category,
-            difficulty_level,
-            estimated_duration,
-            objectId: courseId,
-          };
-        })
-      );
-
-      setPublishedCourses(courseData);
     } catch (error) {
       console.error("Error fetching published courses:", error);
+      setError('Failed to load courses');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const loadEnrolledCourses = () => {
-    const enrolled = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
-    setEnrolledCourses(enrolled);
+  const loadEnrolledCourses = async () => {
+    if (!user) return;
 
-    // Load course progress
-    const progress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
-    setCourseProgress(progress);
+    try {
+      // For now, we'll use localStorage as fallback until enrollment API is implemented
+      // TODO: Replace with API call when enrollment system is ready
+      const enrolled = JSON.parse(localStorage.getItem('enrolledCourses') || '[]');
+      setEnrolledCourses(enrolled);
+
+      // Load course progress
+      const progress = JSON.parse(localStorage.getItem('courseProgress') || '{}');
+      setCourseProgress(progress);
+    } catch (error) {
+      console.error("Error loading enrolled courses:", error);
+    }
   };
 
-  const enrollInCourse = (course: Course) => {
-    const enrolled = [...enrolledCourses];
-    if (!enrolled.find(c => c.id === course.id)) {
-      enrolled.push(course);
-      setEnrolledCourses(enrolled);
-      localStorage.setItem('enrolledCourses', JSON.stringify(enrolled));
+  const enrollInCourse = async (course: Course) => {
+    if (!user) {
+      alert('Please connect your wallet first');
+      return;
+    }
 
-      // Initialize progress
-      const progress = { ...courseProgress };
-      progress[course.id] = { status: 'not_started' as const };
-      setCourseProgress(progress);
-      localStorage.setItem('courseProgress', JSON.stringify(progress));
+    try {
+      // TODO: Replace with actual API call when enrollment system is implemented
+      // const response = await apiService.enrollInCourse(course.id.toString());
+
+      // For now, use localStorage as fallback
+      const enrolled = [...enrolledCourses];
+      if (!enrolled.find(c => c.id === course.id)) {
+        enrolled.push(course);
+        setEnrolledCourses(enrolled);
+        localStorage.setItem('enrolledCourses', JSON.stringify(enrolled));
+
+        // Initialize progress
+        const progress = { ...courseProgress };
+        progress[course.id] = { status: 'not_started' as const };
+        setCourseProgress(progress);
+        localStorage.setItem('courseProgress', JSON.stringify(progress));
+      }
+    } catch (error) {
+      console.error('Enrollment failed:', error);
+      alert('Failed to enroll in course');
     }
   };
 
@@ -219,7 +211,22 @@ export default function CoursesContentOverView() {
             <div className="bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">Price</div>
           </div>
           <div className="grid grid-cols-2 gap-6">
-            {publishedCourses.length === 0 ? (
+            {isLoading ? (
+              <div className="col-span-2 text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-gray-400 mt-4">Loading courses...</p>
+              </div>
+            ) : error ? (
+              <div className="col-span-2 text-center py-8">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button
+                  onClick={fetchPublishedCourses}
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Try Again
+                </button>
+              </div>
+            ) : publishedCourses.length === 0 ? (
               <p className="text-gray-400 col-span-2 text-center">No published courses available yet.</p>
             ) : (
               publishedCourses.map((course) => (
@@ -237,9 +244,14 @@ export default function CoursesContentOverView() {
                       <button className="text-indigo-400 hover:underline">Preview</button>
                       <button
                         onClick={() => enrollInCourse(course)}
-                        className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium"
+                        disabled={!user}
+                        className={`px-4 py-2 rounded-md text-sm font-medium ${
+                          user
+                            ? 'bg-green-600 hover:bg-green-700'
+                            : 'bg-gray-600 cursor-not-allowed'
+                        }`}
                       >
-                        Enroll
+                        {user ? 'Enroll' : 'Connect Wallet'}
                       </button>
                     </div>
                   </div>
