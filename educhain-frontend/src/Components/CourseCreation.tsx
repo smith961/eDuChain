@@ -6,6 +6,8 @@ import { Header } from "./Header";
 import { Loader2, RefreshCcw } from "lucide-react";
 import {  SuiObjectData } from "@mysten/sui/client";
 import { useSuiClient } from "@mysten/dapp-kit";
+import { courseStorage } from "../utils/courseStorage";
+import { useAuth } from "../contexts/AuthContext";
 
 
 interface FormInputProps {
@@ -102,6 +104,7 @@ const CourseCreationForm: React.FC = () => {
     const account =   useCurrentAccount();
     const suiClient = useSuiClient();
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -257,13 +260,24 @@ const CourseCreationForm: React.FC = () => {
       if (createdCourse) {
         const courseId = createdCourse.objectId;
 
-        // Store course ID in localStorage
-        const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
-        storedCourseIds.push(courseId);
-        localStorage.setItem('createdCourseIds', JSON.stringify(storedCourseIds));
-
-        // Also store as published if it's published (but since we just created, it's not yet)
-        // We'll handle publishing separately
+        // Save course to IndexedDB
+        try {
+          await courseStorage.saveCourse({
+            id: courseId,
+            title: formData.title,
+            description: formData.description,
+            instructor: formData.instructor,
+            category: formData.category,
+            difficulty_level: formData.difficulty_level,
+            estimated_duration: formData.estimated_duration,
+            objectId: courseId,
+            createdAt: new Date().toISOString(),
+            isPublished: false,
+          });
+          console.log("✅ Course saved to IndexedDB");
+        } catch (storageError) {
+          console.error("❌ Failed to save course to IndexedDB:", storageError);
+        }
       }
 
       alert("🎉 Course created successfully on-chain!");
@@ -366,11 +380,12 @@ const CourseCreationForm: React.FC = () => {
       console.log("✅ Publish course success:", result);
       alert("Course published successfully!");
 
-      // Store published course ID in localStorage
-      const publishedCourseIds = JSON.parse(localStorage.getItem('publishedCourses') || '[]');
-      if (!publishedCourseIds.includes(course.objectId)) {
-        publishedCourseIds.push(course.objectId);
-        localStorage.setItem('publishedCourses', JSON.stringify(publishedCourseIds));
+      // Update course as published in IndexedDB
+      try {
+        await courseStorage.publishCourse(course.objectId);
+        console.log("✅ Course publish status updated in IndexedDB");
+      } catch (storageError) {
+        console.error("❌ Failed to update publish status in IndexedDB:", storageError);
       }
 
       // Refetch courses to update the list
@@ -384,65 +399,26 @@ const CourseCreationForm: React.FC = () => {
   };
 
   const fetchCourses = async () => {
-    if(!account?.address) {
+    if (!user) {
       return;
     }
 
     setLoading(true);
-    try{
-      // Get stored course IDs from localStorage
-      const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
+    try {
+      // Get courses from IndexedDB
+      const storedCourses = await courseStorage.getAllCourses();
 
-      if (storedCourseIds.length === 0) {
-        setCourses([]);
-        return;
-      }
-
-      const packagedId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-      const structType = packagedId
-      ? `${packagedId}::educhain::Course`
-      : undefined;
-
-      // Fetch each course object by ID
-      const courseData: Course[] = await Promise.all(
-        storedCourseIds.map(async (courseId: string) => {
-          const obj = await suiClient.getObject({
-            id: courseId,
-            options: {
-              showType: true,
-              showContent: true,
-              showDisplay: true,
-            },
-          });
-
-          const data = obj.data as SuiObjectData;
-          const content = (
-            data as SuiObjectData & {
-              content?: { fields?: Record<string, unknown> };
-            }
-          )?.content;
-
-          const fields = content?.fields || {};
-
-          const title = (fields.title as string) || "Untitled";
-          const description = (fields.description as string) || "No description";
-          const instructor = (fields.instructor as string) || "Unknown";
-          const category = (fields.category as string) || "Uncategorized";
-          const difficulty_level = (fields.difficulty_level as number) || 1;
-          const estimated_duration = (fields.estimated_duration as number) || 0;
-
-          return {
-            id: courseId,
-            title,
-            description,
-            instructor,
-            category,
-            difficulty_level,
-            estimated_duration,
-            objectId: courseId,
-          };
-        })
-      );
+      // Convert stored courses to Course interface format
+      const courseData: Course[] = storedCourses.map(storedCourse => ({
+        id: storedCourse.objectId,
+        title: storedCourse.title,
+        description: storedCourse.description,
+        instructor: storedCourse.instructor,
+        category: storedCourse.category,
+        difficulty_level: storedCourse.difficulty_level,
+        estimated_duration: storedCourse.estimated_duration,
+        objectId: storedCourse.objectId,
+      }));
 
       setCourses(courseData);
     } catch (error) {
@@ -450,9 +426,8 @@ const CourseCreationForm: React.FC = () => {
       alert("Failed to fetch courses. Check console for details.");
     } finally {
       setLoading(false);
-
-      }
-    };
+    }
+  };
   
   // React.useEffect(() => {
 
@@ -461,10 +436,10 @@ const CourseCreationForm: React.FC = () => {
   // }, [account?.address]);
 
   useEffect(() => {
-    if (activeTab === "view courses") {
+    if (activeTab === "view courses" && user) {
       fetchCourses();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   useEffect(() => {
     // Load available lesson content files
@@ -655,8 +630,8 @@ const CourseCreationForm: React.FC = () => {
         </div>
         <button
           onClick={fetchCourses}
-          disabled={loading}
-          className="bg-black flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+          disabled={loading || !user}
+          className="bg-black flex items-center gap-2 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -669,7 +644,12 @@ const CourseCreationForm: React.FC = () => {
 
       {/* Courses List */}
       <div className="mt-8">
-        {courses.length === 0 ? (
+        {!user ? (
+          <div className="text-center py-8">
+            <p className="text-gray-600 mb-4">Please connect your wallet to view your courses</p>
+            <p className="text-sm text-gray-500">You need to be authenticated to manage courses</p>
+          </div>
+        ) : courses.length === 0 ? (
           <p className="text-gray-600 text-center">No courses found. Create your first course!</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
