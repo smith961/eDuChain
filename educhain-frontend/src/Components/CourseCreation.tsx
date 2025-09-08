@@ -212,6 +212,19 @@ const CourseCreationForm: React.FC = () => {
       console.log("✅ Transaction success:", result);
       console.log("DEBUG: Transaction digest:", result.digest);
       console.log("DEBUG: Transaction effects:", result.effects);
+
+      // Extract created course ID from effects
+      const createdObjects = result.effects?.created || [];
+      if (createdObjects.length > 0) {
+        const courseId = createdObjects[0].reference.objectId;
+        console.log("DEBUG: Created course ID:", courseId);
+
+        // Store course ID in localStorage
+        const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
+        storedCourseIds.push(courseId);
+        localStorage.setItem('createdCourseIds', JSON.stringify(storedCourseIds));
+      }
+
       alert("🎉 Course created successfully on-chain!");
     } catch (err) {
       console.error("❌ Transaction failed:", err);
@@ -232,34 +245,35 @@ const CourseCreationForm: React.FC = () => {
 
     setLoading(true);
     try{
+      // Get stored course IDs from localStorage
+      const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
+      console.log("DEBUG: Stored course IDs:", storedCourseIds);
+
+      if (storedCourseIds.length === 0) {
+        console.log("DEBUG: No stored course IDs, setting empty courses");
+        setCourses([]);
+        return;
+      }
+
       const packagedId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
       const structType = packagedId
       ? `${packagedId}::educhain::Course`
       : undefined;
       console.log("DEBUG: packageId:", packagedId, "structType:", structType);
 
-      const objects = await suiClient.getOwnedObjects({
-        owner: account.address,
-        filter: structType ? { StructType: structType } : undefined,
-        options: {
-          showType: true,
-          showContent: true,
-          showDisplay: true,
-        },
-      });
-      console.log("DEBUG: Fetched objects:", objects);
-
-      const courseObjects = objects.data.filter((obj: { data: SuiObjectData; }) => {
-        const data = obj.data as SuiObjectData;
-        const type = data?.type || "";
-        return structType
-          ? type === structType
-          : type.includes("::educhain::Course");
-      });
-      console.log("DEBUG: Filtered course objects:", courseObjects);
-
+      // Fetch each course object by ID
       const courseData: Course[] = await Promise.all(
-        courseObjects.map(async (obj: { data: SuiObjectData; }) => {
+        storedCourseIds.map(async (courseId: string) => {
+          console.log("DEBUG: Fetching course:", courseId);
+          const obj = await suiClient.getObject({
+            id: courseId,
+            options: {
+              showType: true,
+              showContent: true,
+              showDisplay: true,
+            },
+          });
+
           const data = obj.data as SuiObjectData;
           const content = (
             data as SuiObjectData & {
@@ -277,14 +291,14 @@ const CourseCreationForm: React.FC = () => {
           const estimated_duration = (fields.estimated_duration as number) || 0;
 
           return {
-            id: obj.data?.objectId || "",
+            id: courseId,
             title,
             description,
             instructor,
             category,
             difficulty_level,
             estimated_duration,
-            objectId: obj.data?.objectId|| "",
+            objectId: courseId,
           };
         })
       );
