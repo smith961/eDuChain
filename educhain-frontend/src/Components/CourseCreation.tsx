@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Transaction } from "@mysten/sui/transactions";
 
@@ -210,6 +210,8 @@ const CourseCreationForm: React.FC = () => {
       const result = await signAndExecute({ transaction: tx });
 
       console.log("✅ Transaction success:", result);
+      console.log("DEBUG: Transaction digest:", result.digest);
+      console.log("DEBUG: Transaction effects:", result.effects);
       alert("🎉 Course created successfully on-chain!");
     } catch (err) {
       console.error("❌ Transaction failed:", err);
@@ -222,8 +224,11 @@ const CourseCreationForm: React.FC = () => {
   };
 
   const fetchCourses = async () => {
-  
-    if(!account?.address) return;
+    console.log("DEBUG: fetchCourses called");
+    if(!account?.address) {
+      console.log("DEBUG: No account address, returning");
+      return;
+    }
 
     setLoading(true);
     try{
@@ -231,27 +236,30 @@ const CourseCreationForm: React.FC = () => {
       const structType = packagedId
       ? `${packagedId}::educhain::Course`
       : undefined;
+      console.log("DEBUG: packageId:", packagedId, "structType:", structType);
 
       const objects = await suiClient.getOwnedObjects({
         owner: account.address,
         filter: structType ? { StructType: structType } : undefined,
         options: {
-          showType: true, 
+          showType: true,
           showContent: true,
           showDisplay: true,
         },
       });
+      console.log("DEBUG: Fetched objects:", objects);
 
-      const courseObjects = objects.data.filter((obj) => {
+      const courseObjects = objects.data.filter((obj: { data: SuiObjectData; }) => {
         const data = obj.data as SuiObjectData;
         const type = data?.type || "";
         return structType
           ? type === structType
-          : type.includes("::educhain::Course");  
+          : type.includes("::educhain::Course");
       });
+      console.log("DEBUG: Filtered course objects:", courseObjects);
 
       const courseData: Course[] = await Promise.all(
-        courseObjects.map(async (obj) => {
+        courseObjects.map(async (obj: { data: SuiObjectData; }) => {
           const data = obj.data as SuiObjectData;
           const content = (
             data as SuiObjectData & {
@@ -267,7 +275,7 @@ const CourseCreationForm: React.FC = () => {
           const category = (fields.category as string) || "Uncategorized";
           const difficulty_level = (fields.difficulty_level as number) || 1;
           const estimated_duration = (fields.estimated_duration as number) || 0;
-          
+
           return {
             id: obj.data?.objectId || "",
             title,
@@ -280,6 +288,7 @@ const CourseCreationForm: React.FC = () => {
           };
         })
       );
+      console.log("DEBUG: Processed course data:", courseData);
 
       setCourses(courseData);
     } catch (error) {
@@ -292,111 +301,22 @@ const CourseCreationForm: React.FC = () => {
     };
   
   // React.useEffect(() => {
-   
+
   //     fetchCourses();
-    
+
   // }, [account?.address]);
+
+  useEffect(() => {
+    console.log("DEBUG: Courses state updated:", courses);
+  }, [courses]);
+
+  useEffect(() => {
+    if (activeTab === "view courses") {
+      console.log("DEBUG: Switched to view courses tab, fetching courses");
+      fetchCourses();
+    }
+  }, [activeTab]);
   return (
-<<<<<<< HEAD
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
-        <div className="text-center mb-10">
-          <WalletConnect />
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-3 mt-3 leading-tight">
-            Create New Course
-          </h1>
-          <p className="text-lg text-gray-600">Empower learners with your knowledge.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-7">
-          {/* Title */}
-          <FormInput
-            label="Course Title"
-            id="title"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            required
-            placeholder="e.g., Mastering React Hooks"
-          />
-
-          {/* Description */}
-          <FormInput
-            label="Course Description"
-            id="description"
-            name="description"
-            type="textarea"
-            value={formData.description}
-            onChange={handleInputChange}
-            required
-            placeholder="Provide a detailed overview of the course content and learning outcomes."
-          />
-
-          {/* Instructor Address */}
-          <FormInput
-            label="Instructor Wallet Address"
-            id="instructor"
-            name="instructor"
-            value={formData.instructor}
-            onChange={handleInputChange}
-            required
-            className="font-mono text-sm"
-            placeholder="0x..."
-          >
-            <p className="text-sm text-gray-500 mt-2">
-              Enter the instructor&apos;s blockchain wallet address.
-            </p>
-          </FormInput>
-
-          {/* Category */}
-          <FormInput
-            label="Category"
-            id="category"
-            name="category"
-            type="select"
-            value={formData.category}
-            onChange={handleInputChange}
-            required
-            className="pr-10 text-gray-900 bg-white"
-          >
-            <option value="" disabled className="text-gray-400">
-              Select a category
-            </option>
-            {categories.map((category) => (
-              <option key={category} value={category} className="text-gray-900" hidden={category === " "}>
-                {category}
-              </option>
-            ))}
-          </FormInput>
-
-      
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Difficulty Level <span className="text-red-500">*</span>
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {difficultyLevels.map((level) => (
-                <label
-                  key={level.value}
-                  className={`flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 text-center
-                  ${formData.difficulty_level === level.value
-                      ? "border-blue-600 bg-blue-50 text-blue-800 shadow-md"
-                      : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm text-gray-700"
-                    }`}
-                >
-                  <input
-                    type="radio"
-                    name="difficulty_level"
-                    value={level.value}
-                    checked={formData.difficulty_level === level.value}
-                    onChange={handleInputChange}
-                    className="sr-only"
-                    required
-                  />
-                  <span className="text-base font-semibold">{level.label}</span>
-                </label>
-              ))}
-=======
     <>
       {activeTab === "create course" ? (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -407,25 +327,8 @@ const CourseCreationForm: React.FC = () => {
                 Create New Course
               </h1>
               <p className="text-lg text-gray-600">Empower learners with your knowledge.</p>
->>>>>>> 43a161c03c1159fe641c6fef1653fa6bda4ef119
             </div>
 
-<<<<<<< HEAD
-        
-          <div>
-            <label
-              htmlFor="estimated_duration"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Estimated Duration (minutes) <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                id="estimated_duration"
-                name="estimated_duration"
-                value={formData.estimated_duration}
-=======
             <form onSubmit={handleSubmit} className=" space-y-7">
               {/* Title */}
               <FormInput
@@ -433,7 +336,6 @@ const CourseCreationForm: React.FC = () => {
                 id="title"
                 name="title"
                 value={formData.title}
->>>>>>> 43a161c03c1159fe641c6fef1653fa6bda4ef119
                 onChange={handleInputChange}
                 required
                 placeholder="e.g., Mastering React Hooks"
@@ -587,7 +489,10 @@ const CourseCreationForm: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={fetchCourses}
+          onClick={() => {
+            console.log("DEBUG: Refresh button clicked");
+            fetchCourses();
+          }}
           disabled={loading}
           className="bg-black flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
         >
@@ -596,8 +501,30 @@ const CourseCreationForm: React.FC = () => {
           ) : (
             <RefreshCcw className="w-5 h-5" />
           )}
-          Refresh 
+          Refresh
         </button>
+      </div>
+
+      {/* Courses List */}
+      <div className="mt-8">
+        {courses.length === 0 ? (
+          <p className="text-gray-600 text-center">No courses found. Create your first course!</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {courses.map((course) => (
+              <div key={course.id} className="bg-white border border-gray-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{course.title}</h3>
+                <p className="text-gray-600 mb-4">{course.description}</p>
+                <div className="text-sm text-gray-500 space-y-1">
+                  <p><strong>Instructor:</strong> {course.instructor}</p>
+                  <p><strong>Category:</strong> {course.category}</p>
+                  <p><strong>Difficulty:</strong> {course.difficulty_level}</p>
+                  <p><strong>Duration:</strong> {course.estimated_duration} minutes</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
             </div>
           </div>
