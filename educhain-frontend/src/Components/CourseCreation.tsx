@@ -211,18 +211,23 @@ const CourseCreationForm: React.FC = () => {
 
       console.log("✅ Transaction success:", result);
       console.log("DEBUG: Transaction digest:", result.digest);
-      console.log("DEBUG: Transaction effects:", result.effects);
+      console.log("DEBUG: Full transaction effects:", JSON.stringify(result.effects, null, 2));
 
       // Extract created course ID from effects
       const createdObjects = result.effects?.created || [];
+      console.log("DEBUG: Created objects:", createdObjects);
       if (createdObjects.length > 0) {
         const courseId = createdObjects[0].reference.objectId;
         console.log("DEBUG: Created course ID:", courseId);
 
         // Store course ID in localStorage
         const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
+        console.log("DEBUG: Existing stored IDs:", storedCourseIds);
         storedCourseIds.push(courseId);
         localStorage.setItem('createdCourseIds', JSON.stringify(storedCourseIds));
+        console.log("DEBUG: Updated stored IDs:", storedCourseIds);
+      } else {
+        console.log("DEBUG: No created objects found in transaction effects");
       }
 
       alert("🎉 Course created successfully on-chain!");
@@ -247,7 +252,8 @@ const CourseCreationForm: React.FC = () => {
     try{
       // Get stored course IDs from localStorage
       const storedCourseIds = JSON.parse(localStorage.getItem('createdCourseIds') || '[]');
-      console.log("DEBUG: Stored course IDs:", storedCourseIds);
+      console.log("DEBUG: Stored course IDs from localStorage:", storedCourseIds);
+      console.log("DEBUG: localStorage item:", localStorage.getItem('createdCourseIds'));
 
       if (storedCourseIds.length === 0) {
         console.log("DEBUG: No stored course IDs, setting empty courses");
