@@ -8,12 +8,6 @@ import {  SuiObjectData } from "@mysten/sui/client";
 import { useSuiClient } from "@mysten/dapp-kit";
 
 
-
-
-
-
-
-
 interface FormInputProps {
   label: string;
   id: string;
@@ -211,13 +205,25 @@ const CourseCreationForm: React.FC = () => {
 
       console.log("✅ Transaction success:", result);
       console.log("DEBUG: Transaction digest:", result.digest);
-      console.log("DEBUG: Full transaction effects:", JSON.stringify(result.effects, null, 2));
 
-      // Extract created course ID from effects
-      const createdObjects = result.effects?.created || [];
-      console.log("DEBUG: Created objects:", createdObjects);
-      if (createdObjects.length > 0) {
-        const courseId = createdObjects[0].reference.objectId;
+      // Get full transaction details to extract created objects
+      const txDetails = await suiClient.getTransactionBlock({
+        digest: result.digest,
+        options: {
+          showEffects: true,
+          showObjectChanges: true,
+        },
+      });
+      console.log("DEBUG: Full transaction details:", txDetails);
+
+      // Extract created course ID from objectChanges
+      const objectChanges = txDetails.objectChanges || [];
+      console.log("DEBUG: Object changes:", objectChanges);
+      const createdCourse = objectChanges.find((change: any) =>
+        change.type === 'created' && change.objectType?.includes('::educhain::Course')
+      );
+      if (createdCourse) {
+        const courseId = createdCourse.objectId;
         console.log("DEBUG: Created course ID:", courseId);
 
         // Store course ID in localStorage
@@ -227,7 +233,7 @@ const CourseCreationForm: React.FC = () => {
         localStorage.setItem('createdCourseIds', JSON.stringify(storedCourseIds));
         console.log("DEBUG: Updated stored IDs:", storedCourseIds);
       } else {
-        console.log("DEBUG: No created objects found in transaction effects");
+        console.log("DEBUG: No created course found in object changes");
       }
 
       alert("🎉 Course created successfully on-chain!");
