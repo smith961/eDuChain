@@ -5,6 +5,7 @@ import MainDashboard from "./Components/Main-DashBoard-Content";
 import AdminPanel from "./Components/AdminPanel";
 import CourseCreation from "./Components/CourseCreation";
 import LessonViewer from "./Components/LessonViewer";
+import LearningDashboard from "./Components/LearningDashboard";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/courses" element={<CourseCreation />} />
           <Route path="/lesson/:lessonId" element={<LessonViewer />} />
+          <Route path="/learning-dashboard" element={<LearningDashboard />} />
         </Routes>
       </Router>
     </AuthProvider>
