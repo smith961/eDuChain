@@ -118,7 +118,7 @@ const CourseCreationForm: React.FC = () => {
   const [activeTab, setActiveTab] = useState("create course");
 
   const [courses, setCourses] = useState<Course[]>([]);
-
+  const [availableLesson, setAvailableLessons] = useState(['']);
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [lessonForm, setLessonForm] = useState({
@@ -426,9 +426,6 @@ const CourseCreationForm: React.FC = () => {
     if (activeTab === "view courses" && user) {
       fetchCourses();
     }
-<<<<<<< HEAD
-  }, [activeTab]);
-=======
   }, [activeTab, user]);
 
   useEffect(() => {
@@ -446,7 +443,6 @@ const CourseCreationForm: React.FC = () => {
       console.error('Error loading available lessons:', error);
     }
   };
->>>>>>> 6cd3e94bbb5cc83df447fae0961314bfe53dba21
   return (
     <>
       {  activeTab === "create course" ? (

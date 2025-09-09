@@ -55,7 +55,7 @@ interface SidebarProps {
 export default function Sidebar({ activePage, onPageChange }: SidebarProps) {
   return (
     <div className="w-64 h-full bg-slate-900 border-r border-slate-700 flex flex-col">
-      <div className="flex-1 py-6">
+      <div className="flex-1 py-6 overflow-y-auto">
         <SidebarSection title="Main">
           <SidebarItem
             icon={<FaTachometerAlt />}
