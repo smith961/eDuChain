@@ -349,18 +349,20 @@ const LessonViewer: React.FC = () => {
 
       {/* Enrollment Quiz Modal */}
       {showQuiz && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Course Enrollment Assessment
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+              <div className="text-4xl mb-3">🧠</div>
+              <h2 className="text-2xl font-bold mb-2">
+                Knowledge Check Required
               </h2>
-              <p className="text-gray-600">
-                Answer these questions to access: <strong>{lessonId?.replace('.mdx', '').toUpperCase()}</strong>
+              <p className="text-blue-100">
+                Complete this assessment to access: <strong className="text-white">{lessonId?.replace('.mdx', '').replace('-', ' ').toUpperCase()}</strong>
               </p>
             </div>
 
-            {!quizCompleted ? (
+            <div className="px-8 pb-8">
+              {!quizCompleted ? (
               <div>
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-4">
@@ -375,18 +377,30 @@ const LessonViewer: React.FC = () => {
                     </div>
                   </div>
 
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {getCurrentQuizQuestions()[currentQuizQuestion].question}
-                  </h3>
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-r-lg mb-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 leading-relaxed">
+                      {getCurrentQuizQuestions()[currentQuizQuestion].question}
+                    </h3>
+                    <p className="text-sm text-blue-600 font-medium">
+                      Choose the best answer below
+                    </p>
+                  </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {getCurrentQuizQuestions()[currentQuizQuestion].options.map((option, index) => (
                       <button
                         key={index}
                         onClick={() => handleQuizAnswer(index)}
-                        className="w-full p-4 text-left border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all duration-200"
+                        className="w-full p-6 text-left border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 hover:shadow-md transition-all duration-200 bg-white"
                       >
-                        <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
+                        <div className="flex items-start space-x-4">
+                          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 border-2 border-blue-300 rounded-full flex items-center justify-center">
+                            <span className="font-bold text-blue-700 text-sm">{String.fromCharCode(65 + index)}</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-gray-800 font-medium leading-relaxed">{option}</p>
+                          </div>
+                        </div>
                       </button>
                     ))}
                   </div>
@@ -431,6 +445,7 @@ const LessonViewer: React.FC = () => {
               </button>
               <div className="text-sm text-gray-500">
                 Passing Score: 60%
+              </div>
               </div>
             </div>
           </div>
