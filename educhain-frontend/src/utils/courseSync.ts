@@ -1,6 +1,7 @@
-import { apiService } from '../services/api';
+import { frontendAuthService } from '../services/api';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { SuiObjectData } from '@mysten/sui/client';
+import { courseStorage } from './courseStorage';
 
 export interface BlockchainCourse {
   id: string;
@@ -31,13 +32,24 @@ export class CourseSyncService {
 
       console.log(`📚 Found ${publishedCourses.length} published courses on blockchain`);
 
-      // Sync each course to backend
+      // Store each course locally
       for (const course of publishedCourses) {
         try {
-          await apiService.syncCourseFromBlockchain(course);
-          console.log(`✅ Synced course: ${course.title}`);
+          await courseStorage.saveCourse({
+            id: course.id,
+            title: course.title,
+            description: course.description,
+            instructor: course.instructorAddress,
+            category: course.category,
+            difficulty_level: course.difficultyLevel,
+            estimated_duration: course.estimatedDuration,
+            objectId: course.id,
+            createdAt: course.createdAt,
+            isPublished: course.isPublished,
+          });
+          console.log(`✅ Stored course locally: ${course.title}`);
         } catch (error) {
-          console.error(`❌ Failed to sync course ${course.id}:`, error);
+          console.error(`❌ Failed to store course ${course.id}:`, error);
         }
       }
 
@@ -97,8 +109,19 @@ export class CourseSyncService {
         createdAt: fields.created_at || new Date().toISOString(),
       };
 
-      // Sync to backend
-      await apiService.syncCourseFromBlockchain(course);
+      // Store locally
+      await courseStorage.saveCourse({
+        id: courseId,
+        title: course.title,
+        description: course.description,
+        instructor: course.instructorAddress,
+        category: course.category,
+        difficulty_level: course.difficultyLevel,
+        estimated_duration: course.estimatedDuration,
+        objectId: courseId,
+        createdAt: course.createdAt,
+        isPublished: course.isPublished,
+      });
 
       console.log(`✅ Synced course: ${course.title}`);
       return course;

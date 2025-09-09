@@ -1,108 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
-
+import { Course, suiClient, createCourseTransaction, addLessonTransaction, publishCourseTransaction } from "../services/blockchainService";
 import { Header } from "./Header";
 import { Loader2, RefreshCcw } from "lucide-react";
-import {  SuiObjectData } from "@mysten/sui/client";
-import { useSuiClient } from "@mysten/dapp-kit";
-import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
+import { courseStorage } from "../utils/courseStorage";
+import FormInput from "./FormInput";
 
-
-interface FormInputProps {
-  label: string;
-  id: string;
-  name: string;
-  type?: string;
-  value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  placeholder?: string;
-  required?: boolean;
-  className?: string;
-  children?: React.ReactNode;
-  min?: number;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  instructor: string;
-  category: string;
-  difficulty_level: number;
-  estimated_duration: number;
-  objectId: string;
-}
-
-const FormInput: React.FC<FormInputProps> = ({
-  label,
-  id,
-  name,
-  type = "text",
-  value,
-  onChange,
-  placeholder = "",
-  required = false,
-  className = "",
-  children,
-  min,
-  ...props
-}) => (
-  <div>
-    <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
-      {label} {required && <span className="text-red-500">*</span>}
-    </label>
-
-    {type === "textarea" ? (
-      <textarea
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        rows={4}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-y ${className}`}
-        placeholder={placeholder}
-        {...props}
-      ></textarea>
-    ) : type === "select" ? (
-      <select
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white appearance-none pr-10 ${className}`}
-        {...props}
-
-      >
-        {children}
-      </select>
-    ) : (
-      <input
-        type={type}
-        id={id}
-        name={name}
-        value={value}
-        onChange={onChange}
-        required={required}
-        className={`w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${className}`}
-        placeholder={placeholder}
-        min={type === "number" ? min : undefined}
-        {...props}
-
-      />
-    )}
-
-  </div>
-);
-
-
+// Simplified component using blockchain service
 
 const CourseCreationForm: React.FC = () => {
-    const account =   useCurrentAccount();
-    const suiClient = useSuiClient();
+    const account = useCurrentAccount();
     const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
     const { user } = useAuth();
     const [formData, setFormData] = useState({
@@ -116,11 +24,14 @@ const CourseCreationForm: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("create course");
-
   const [courses, setCourses] = useState<Course[]>([]);
+<<<<<<< HEAD
   const [availableLesson, setAvailableLessons] = useState(['']);
+=======
+>>>>>>> bde9bd1fe67d48e65eb187d75b43a42cce21c84c
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [availableLessons, setAvailableLessons] = useState<string[]>([]);
   const [lessonForm, setLessonForm] = useState({
     title: '',
     content_type: '',
@@ -128,9 +39,12 @@ const CourseCreationForm: React.FC = () => {
     duration: 0,
     order_index: 0,
   });
+<<<<<<< HEAD
   
 
   
+=======
+>>>>>>> bde9bd1fe67d48e65eb187d75b43a42cce21c84c
 
   const categories = [
     "Programming",
@@ -150,6 +64,10 @@ const CourseCreationForm: React.FC = () => {
     { value: 3, label: "Advanced" },
     { value: 4, label: "Expert" },
   ];
+  
+
+  
+
 
   
 
@@ -189,43 +107,25 @@ const CourseCreationForm: React.FC = () => {
       return;
     }
 
-    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
-    const Registry = import.meta.env.VITE_EDUCHAINRegistry as string;
     setLoading(true);
 
     try {
-      const tx = new Transaction();
-
-
-      if (!ADMIN_CAP_ID || !Registry) {
-        throw new Error("Admin Cap or Registry ID not configured");
-      }
-
-
-      const clock = tx.sharedObjectRef({
-        objectId: '0x6', // Fixed Clock object ID
-        initialSharedVersion: 1,
-        mutable: false,
-      });
+      const tx = createCourseTransaction(
+        formData.title,
+        formData.description,
+        formData.instructor,
+        formData.category,
+        formData.difficulty_level,
+        formData.estimated_duration
+      );
 
 
 
 
-      tx.moveCall({
-        target: `${packageId}::educhain::create_course`,
-        arguments: [
-          tx.object(ADMIN_CAP_ID), // AdminCap object
-          tx.object(Registry),
-          tx.pure.string(formData.title),
-          tx.pure.string(formData.description),
-          tx.pure.address(formData.instructor),
-          tx.pure.string(formData.category),
-          tx.pure.u8(formData.difficulty_level),
-          tx.pure.u64(formData.estimated_duration),
-          clock,
-        ],
-      });
+
+
+
+
 
       const result = await signAndExecute({ transaction: tx });
 
@@ -246,7 +146,7 @@ const CourseCreationForm: React.FC = () => {
         change.type === 'created' && change.objectType?.includes('::educhain::Course')
       );
       if (createdCourse) {
-        const courseId = createdCourse.objectId;
+        const courseId = (createdCourse as any).objectId;
 
         // Save course to IndexedDB
         try {
@@ -287,29 +187,17 @@ const CourseCreationForm: React.FC = () => {
       return;
     }
 
-    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
     setLoading(true);
 
     try {
-      const tx = new Transaction();
-
-      if (!ADMIN_CAP_ID) {
-        throw new Error("Admin Cap ID not configured");
-      }
-
-      tx.moveCall({
-        target: `${packageId}::educhain::add_lesson`,
-        arguments: [
-          tx.object(ADMIN_CAP_ID),
-          tx.object(selectedCourse.objectId),
-          tx.pure.string(lessonForm.title),
-          tx.pure.string(lessonForm.content_type),
-          tx.pure.string(lessonForm.content_url),
-          tx.pure.u64(lessonForm.duration),
-          tx.pure.u64(lessonForm.order_index),
-        ],
-      });
+      const tx = addLessonTransaction(
+        selectedCourse.objectId,
+        lessonForm.title,
+        lessonForm.content_type,
+        lessonForm.content_url,
+        lessonForm.duration,
+        lessonForm.order_index
+      );
 
       const result = await signAndExecute({ transaction: tx });
 
@@ -347,23 +235,10 @@ const CourseCreationForm: React.FC = () => {
     setLoading(true);
 
     try {
-      const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
 
-      if (!ADMIN_CAP_ID) {
-        throw new Error("Admin Cap ID not configured");
-      }
 
       console.log("📦 Publishing course on blockchain...");
-      const tx = new Transaction();
-
-      tx.moveCall({
-        target: `${packageId}::educhain::publish_course`,
-        arguments: [
-          tx.object(ADMIN_CAP_ID),
-          tx.object(course.objectId),
-        ],
-      });
+      const tx = publishCourseTransaction(course.objectId);
 
       const result = await signAndExecute({ transaction: tx });
       console.log("✅ Blockchain publish success:", result);

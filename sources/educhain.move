@@ -12,8 +12,10 @@ use std::string::{Self, String};
 // =====Constants=====
 const LESSON_XP_REWARD: u64 =  50;
 const COURSE_COMPLETION_XP: u64 = 200;
-// const QUIZ_PASS_XP: u64 = 100;
+const QUIZ_PASS_XP: u64 = 100;
 const DAILY_LOGIN_XP: u64 = 10;
+const ACHIEVEMENT_BASE_XP: u64 = 25;
+const STREAK_BONUS_MULTIPLIER: u64 = 5;
 
 // =====Level thresholds=====
 // const LEVEL_1_THRESHOLD: u64 = 200;
@@ -55,6 +57,8 @@ public struct UserProfile has key {
     current_level: u64,
     courses_enrolled: VecMap<ID, bool>, // course_id -> completed
     lessons_completed: VecMap<ID, bool>, // lesson_id -> completed
+    quizzes_completed: VecMap<ID, u64>, // quiz_id -> score
+    achievements: VecMap<ID, AchievementProgress>, // achievement tracking
     nfts_earned: vector<ID>,
     last_login: u64, // timestamp of last login
     login_streak: u64, // consecutive login days
@@ -140,6 +144,18 @@ public struct QuizAttempt has store {
     answers: vector<u64>, // indices of selected answers
 }
 
+/// Achievement structure
+public struct Achievement has store {
+    id: ID,
+    name: String,
+    description: String,
+    icon: String,
+    xp_reward: u64,
+    rarity: String, // "common", "rare", "epic", "legendary", "mythic"
+    category: String, // "learning", "social", "completion", "streak"
+    unlocked_at: Option<u64>,
+}
+
 /// NFT structure for rewards
 public struct CompletionNFT has key, store {
     id: UID,
@@ -153,6 +169,14 @@ public struct CompletionNFT has key, store {
     xp_earned: u64,
     completion_date: u64, // timestamp
     rarity: String, // e.g., "Common", "Rare", "Epic"
+}
+
+/// Achievement Progress structure
+public struct AchievementProgress has store {
+    achievement_id: ID,
+    progress: u64,
+    target: u64,
+    completed: bool,
 }
    
 
@@ -305,6 +329,8 @@ public entry fun register_user(
         current_level: 0,
         courses_enrolled: vec_map::empty(),
         lessons_completed: vec_map::empty(),
+        quizzes_completed: vec_map::empty(),
+        achievements: vec_map::empty(),
         nfts_earned: vector::empty(),
         last_login: current_time,
         login_streak: 1,
@@ -442,13 +468,56 @@ public entry fun sign_in(
 
 
  /// Publish course (admin only)
-    public entry fun publish_course(
-        _: &AdminCap,
-        course: &mut Course,
-        _ctx: &mut TxContext
-    ) {
-        course.is_published = true;
-    }
+   public entry fun publish_course(
+       _: &AdminCap,
+       course: &mut Course,
+       _ctx: &mut TxContext
+   ) {
+       course.is_published = true;
+   }
+
+   /// Create quiz for lesson (admin only)
+   public entry fun create_quiz(
+       _: &AdminCap,
+       course: &mut Course,
+       lesson_index: u64,
+       passing_score: u64,
+       max_attempts: u64,
+       xp_reward: u64,
+       ctx: &mut TxContext
+   ) {
+       let lesson = vector::borrow_mut(&mut course.lessons, lesson_index);
+       let quiz = Quiz {
+           id: object::new(ctx),
+           lesson_id: lesson.id,
+           questions: vector::empty(),
+           passing_score,
+           max_attempts,
+           xp_reward,
+       };
+
+       lesson.quiz_id = option::some(object::id(&quiz));
+       transfer::share_object(quiz);
+   }
+
+   /// Add quiz question (admin only)
+   public entry fun add_quiz_question(
+       _: &AdminCap,
+       quiz: &mut Quiz,
+       question: String,
+       options: vector<String>,
+       correct_answer: u64,
+       explanation: String,
+       _ctx: &mut TxContext
+   ) {
+       let quiz_question = QuizQuestion {
+           question,
+           options,
+           correct_answer,
+           explanation,
+       };
+       vector::push_back(&mut quiz.questions, quiz_question);
+   }
 
 
 // ===== Learning Functions =====
@@ -600,6 +669,9 @@ public entry fun sign_in(
         let attempts = vec_map::get_mut(&mut enrollment.quiz_attempts, &quiz_id);
         vector::push_back(attempts, attempt);
 
+        // Track quiz completion in profile
+        vec_map::insert(&mut profile.quizzes_completed, quiz_id, score);
+
         // Award XP if passed
         let mut xp_earned = 0;
         if (passed) {
@@ -607,7 +679,7 @@ public entry fun sign_in(
             enrollment.total_xp_earned = enrollment.total_xp_earned + xp_earned;
             profile.total_xp = profile.total_xp + xp_earned;
             registry.total_xp_awarded = registry.total_xp_awarded + xp_earned;
-            
+
             check_level_up(profile, clock);
 
             event::emit(XPAwarded {
@@ -867,4 +939,48 @@ public entry fun sign_in(
             registry.total_courses,
             registry.total_xp_awarded
         )
+    }
+
+    /// Get user achievements count
+    public fun get_user_achievements_count(profile: &UserProfile): u64 {
+        vec_map::length(&profile.achievements)
+    }
+
+    /// Get quiz info
+    public fun get_quiz_info(quiz: &Quiz): (u64, u64, u64, u64) {
+        (
+            vector::length(&quiz.questions),
+            quiz.passing_score,
+            quiz.max_attempts,
+            quiz.xp_reward
+        )
+    }
+
+    /// Get lesson progress for user
+    public fun get_user_lesson_progress(enrollment: &CourseEnrollment, lesson_id: ID): (bool, u64, u64) {
+        if (vec_map::contains(&enrollment.lessons_completed, &lesson_id)) {
+            let completion = vec_map::get(&enrollment.lessons_completed, &lesson_id);
+            (true, completion.xp_earned, completion.completed_at)
+        } else {
+            (false, 0, 0)
+        }
+    }
+
+    /// Get user quiz attempts count
+    public fun get_user_quiz_attempts_count(enrollment: &CourseEnrollment, quiz_id: ID): u64 {
+        if (vec_map::contains(&enrollment.quiz_attempts, &quiz_id)) {
+            vector::length(vec_map::get(&enrollment.quiz_attempts, &quiz_id))
+        } else {
+            0
+        }
+    }
+
+    /// Check if user has completed achievement
+    public fun has_achievement(profile: &UserProfile, achievement_id: ID): bool {
+        if (vec_map::contains(&profile.achievements, &achievement_id)) {
+            let progress = vec_map::get(&profile.achievements, &achievement_id);
+            progress.completed
+        } else {
+            false
+        }
     }

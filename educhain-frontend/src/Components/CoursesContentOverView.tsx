@@ -223,8 +223,11 @@ export default function CoursesContentOverView() {
 
   const completeEnrollment = async (course: Course) => {
     try {
-      // TODO: Replace with actual API call when enrollment system is implemented
-      // const response = await apiService.enrollInCourse(course.id.toString());
+      // Use frontend service for enrollment
+      const { frontendAuthService } = await import('../services/api');
+      if (user?.walletAddress) {
+        frontendAuthService.enrollInCourse(user.walletAddress, course.id);
+      }
 
       // For now, use localStorage as fallback
       const enrolled = [...enrolledCourses];

@@ -1,128 +1,201 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Frontend-only service - No backend API calls
+// All data is stored locally or on blockchain
 
-class ApiService {
-  private token: string | null = null;
+import XPService from './xpService';
 
-  constructor() {
-    // Load token from localStorage on initialization
-    this.token = localStorage.getItem('authToken');
-  }
+export interface UserProfile {
+  id: string;
+  walletAddress: string;
+  username?: string;
+  email?: string;
+  totalXP: number;
+  currentLevel: number;
+  createdAt: number;
+  lastLogin: number;
+}
 
-  private async request(endpoint: string, options: RequestInit = {}): Promise<any> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
+class FrontendAuthService {
+  private static readonly USER_KEY = 'educhain_user_profile';
+
+  // Authentication methods - Local storage only
+  static login(walletAddress: string, username?: string, email?: string): UserProfile {
+    // Create or update user profile
+    const existingProfile = this.getStoredProfile(walletAddress);
+
+    const profile: UserProfile = {
+      id: walletAddress,
+      walletAddress,
+      username: username || existingProfile?.username,
+      email: email || existingProfile?.email,
+      totalXP: existingProfile?.totalXP || 0,
+      currentLevel: existingProfile?.currentLevel || 1,
+      createdAt: existingProfile?.createdAt || Date.now(),
+      lastLogin: Date.now(),
     };
 
-    // Add authorization header if token exists
-    if (this.token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${this.token}`,
-      };
+    // Store profile
+    localStorage.setItem(`${this.USER_KEY}_${walletAddress}`, JSON.stringify(profile));
+
+    // Award daily login XP if applicable
+    this.awardDailyLoginXP(walletAddress);
+
+    return profile;
+  }
+
+  static getProfile(walletAddress: string): UserProfile | null {
+    return this.getStoredProfile(walletAddress);
+  }
+
+  static updateProfile(walletAddress: string, updates: { username?: string; email?: string }): UserProfile {
+    const profile = this.getStoredProfile(walletAddress);
+    if (!profile) {
+      throw new Error('Profile not found');
     }
 
-    try {
-      const response = await fetch(url, config);
+    const updatedProfile = { ...profile, ...updates };
+    localStorage.setItem(`${this.USER_KEY}_${walletAddress}`, JSON.stringify(updatedProfile));
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+    return updatedProfile;
+  }
+
+  static logout(walletAddress: string): void {
+    // Clear user-specific data but keep profile
+    const profile = this.getStoredProfile(walletAddress);
+    if (profile) {
+      profile.lastLogin = Date.now();
+      localStorage.setItem(`${this.USER_KEY}_${walletAddress}`, JSON.stringify(profile));
+    }
+  }
+
+  // Course methods - Local storage only
+  static getPublishedCourses() {
+    // Get courses from local storage (created by admin/course creators)
+    const courses = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('educhain_course_')) {
+        try {
+          const course = JSON.parse(localStorage.getItem(key)!);
+          if (course.isPublished) {
+            courses.push(course);
+          }
+        } catch (e) {
+          // Skip invalid data
+        }
+      }
+    }
+    return courses;
+  }
+
+  static getCourseById(id: string) {
+    const courseData = localStorage.getItem(`educhain_course_${id}`);
+    return courseData ? JSON.parse(courseData) : null;
+  }
+
+  // Enrollment methods - Local storage only
+  static getEnrollments(walletAddress: string) {
+    const enrollments = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(`educhain_enrollment_${walletAddress}_`)) {
+        try {
+          const enrollment = JSON.parse(localStorage.getItem(key)!);
+          enrollments.push(enrollment);
+        } catch (e) {
+          // Skip invalid data
+        }
+      }
+    }
+    return enrollments;
+  }
+
+  static enrollInCourse(walletAddress: string, courseId: string) {
+    const enrollment = {
+      id: `enrollment_${Date.now()}`,
+      userId: walletAddress,
+      courseId,
+      enrolledAt: Date.now(),
+      progress: 0,
+      completedLessons: [],
+    };
+
+    localStorage.setItem(`educhain_enrollment_${walletAddress}_${courseId}`, JSON.stringify(enrollment));
+    return enrollment;
+  }
+
+  // Progress methods - Local storage only
+  static getProgress(walletAddress: string) {
+    return this.getEnrollments(walletAddress);
+  }
+
+  static updateProgress(walletAddress: string, courseId: string, lessonId: string, progress: number) {
+    const enrollmentKey = `educhain_enrollment_${walletAddress}_${courseId}`;
+    const enrollmentData = localStorage.getItem(enrollmentKey);
+
+    if (enrollmentData) {
+      const enrollment = JSON.parse(enrollmentData);
+      enrollment.progress = progress;
+
+      if (!enrollment.completedLessons.includes(lessonId)) {
+        enrollment.completedLessons.push(lessonId);
       }
 
-      return await response.json();
+      localStorage.setItem(enrollmentKey, JSON.stringify(enrollment));
+      return enrollment;
+    }
+
+    return null;
+  }
+
+  // Quiz methods - Local storage only
+  static getQuizzes(courseId: string) {
+    const quizzes = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('educhain_quiz_')) {
+        try {
+          const quiz = JSON.parse(localStorage.getItem(key)!);
+          if (quiz.courseId === courseId && quiz.isActive) {
+            quizzes.push(quiz);
+          }
+        } catch (e) {
+          // Skip invalid data
+        }
+      }
+    }
+    return quizzes;
+  }
+
+  static submitQuiz(walletAddress: string, quizId: string, answers: any[]) {
+    // This is handled by QuizService now
+    // Just return a mock response for compatibility
+    return {
+      success: true,
+      message: 'Quiz submitted successfully',
+    };
+  }
+
+  // Helper methods
+  private static getStoredProfile(walletAddress: string): UserProfile | null {
+    const profileData = localStorage.getItem(`${this.USER_KEY}_${walletAddress}`);
+    return profileData ? JSON.parse(profileData) : null;
+  }
+
+  private static async awardDailyLoginXP(walletAddress: string): Promise<void> {
+    try {
+      const profile = this.getStoredProfile(walletAddress);
+      if (profile) {
+        // Check if it's been more than 24 hours since last login
+        const hoursSinceLastLogin = (Date.now() - profile.lastLogin) / (1000 * 60 * 60);
+
+        if (hoursSinceLastLogin >= 24) {
+          await XPService.awardXP(walletAddress, 10, 'Daily login bonus', 'daily_login');
+        }
+      }
     } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
+      console.warn('Failed to award daily login XP:', error);
     }
-  }
-
-  // Authentication methods
-  async login(walletAddress: string, username?: string, email?: string) {
-    const response = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ walletAddress, username, email }),
-    });
-
-    if (response.token) {
-      this.token = response.token;
-      localStorage.setItem('authToken', response.token);
-    }
-
-    return response;
-  }
-
-  async getProfile() {
-    return this.request('/auth/profile');
-  }
-
-  async updateProfile(updates: { username?: string; email?: string }) {
-    return this.request('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
-  logout() {
-    this.token = null;
-    localStorage.removeItem('authToken');
-  }
-
-  // Course methods
-  async getPublishedCourses() {
-    return this.request('/courses/published');
-  }
-
-  async getCourseById(id: string) {
-    return this.request(`/courses/${id}`);
-  }
-
-  async syncCourseFromBlockchain(courseData: any) {
-    return this.request('/courses/sync', {
-      method: 'POST',
-      body: JSON.stringify(courseData),
-    });
-  }
-
-  // Enrollment methods (to be implemented)
-  async getEnrollments() {
-    return this.request('/enrollments');
-  }
-
-  async enrollInCourse(courseId: string) {
-    return this.request('/enrollments', {
-      method: 'POST',
-      body: JSON.stringify({ courseId }),
-    });
-  }
-
-  // Progress methods (to be implemented)
-  async getProgress() {
-    return this.request('/progress');
-  }
-
-  async updateProgress(enrollmentId: string, lessonId: string, progress: number) {
-    return this.request('/progress/update', {
-      method: 'POST',
-      body: JSON.stringify({ enrollmentId, lessonId, progress }),
-    });
-  }
-
-  // Quiz methods (to be implemented)
-  async getQuizzes(courseId: string) {
-    return this.request(`/quizzes?courseId=${courseId}`);
-  }
-
-  async submitQuiz(quizId: string, answers: any[]) {
-    return this.request('/quizzes/submit', {
-      method: 'POST',
-      body: JSON.stringify({ quizId, answers }),
-    });
   }
 }
 
-export const apiService = new ApiService();
+export const frontendAuthService = FrontendAuthService;
