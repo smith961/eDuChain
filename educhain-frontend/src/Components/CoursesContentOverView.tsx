@@ -1,7 +1,7 @@
 
 
 import React, { useState, useEffect } from "react";
-import { useSuiClient } from "@mysten/dapp-kit";
+import { useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
 import { SuiObjectData } from "@mysten/sui/client";
 import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
@@ -30,6 +30,7 @@ const yourCoursesData = [
 
 export default function CoursesContentOverView() {
   const suiClient = useSuiClient();
+  const account = useCurrentAccount();
   const { user } = useAuth();
   const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
@@ -165,22 +166,13 @@ export default function CoursesContentOverView() {
   };
 
   const enrollInCourse = async (course: Course) => {
-    if (!user) {
+    if (!user && !account) {
       alert('Please connect your wallet first');
       return;
     }
 
-    // Show enrollment quiz for Sui Move courses
-    if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
-      setSelectedCourseForQuiz(course);
-      setShowEnrollmentQuiz(true);
-      setCurrentQuizQuestion(0);
-      setQuizAnswers([]);
-      setQuizCompleted(false);
-      return;
-    }
-
-    // Direct enrollment for other courses
+    // For now, direct enrollment for all courses
+    // Quiz will be moved to lesson component
     await completeEnrollment(course);
   };
 
@@ -412,14 +404,14 @@ export default function CoursesContentOverView() {
                       <button className="text-indigo-400 hover:underline">Preview</button>
                       <button
                         onClick={() => enrollInCourse(course)}
-                        disabled={!user}
+                        disabled={!user && !account}
                         className={`px-4 py-2 rounded-md text-sm font-medium ${
-                          user
+                          (user || account)
                             ? 'bg-green-600 hover:bg-green-700'
                             : 'bg-gray-600 cursor-not-allowed'
                         }`}
                       >
-                        {user ? 'Enroll' : 'Connect Wallet'}
+                        {(user || account) ? 'Enroll' : 'Connect Wallet'}
                       </button>
                     </div>
                   </div>
