@@ -343,16 +343,19 @@ const CourseCreationForm: React.FC = () => {
       return;
     }
 
-    const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
-    const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
+    console.log("🚀 Starting course publish process for:", course.title);
     setLoading(true);
 
     try {
-      const tx = new Transaction();
+      const packageId = import.meta.env.VITE_PACKAGE_ID as string | undefined;
+      const ADMIN_CAP_ID = import.meta.env.VITE_ADMIN_CAP_ID as string;
 
       if (!ADMIN_CAP_ID) {
         throw new Error("Admin Cap ID not configured");
       }
+
+      console.log("📦 Publishing course on blockchain...");
+      const tx = new Transaction();
 
       tx.moveCall({
         target: `${packageId}::educhain::publish_course`,
@@ -363,20 +366,28 @@ const CourseCreationForm: React.FC = () => {
       });
 
       const result = await signAndExecute({ transaction: tx });
-
-      console.log("✅ Publish course success:", result);
-      alert("Course published successfully!");
+      console.log("✅ Blockchain publish success:", result);
 
       // Update course as published in IndexedDB
+      console.log("💾 Updating IndexedDB publish status...");
       try {
         await courseStorage.publishCourse(course.objectId);
-        console.log("✅ Course publish status updated in IndexedDB");
+        console.log("✅ IndexedDB publish status updated successfully");
+
+        // Verify the update
+        const publishedCourses = await courseStorage.getPublishedCourses();
+        console.log("📊 Current published courses:", publishedCourses.length);
+
       } catch (storageError) {
         console.error("❌ Failed to update publish status in IndexedDB:", storageError);
       }
 
+      alert("Course published successfully!");
+
       // Refetch courses to update the list
+      console.log("🔄 Refetching courses...");
       fetchCourses();
+
     } catch (err) {
       console.error("❌ Publish course failed:", err);
       alert("Failed to publish course. Check console for details.");
@@ -386,14 +397,18 @@ const CourseCreationForm: React.FC = () => {
   };
 
   const fetchCourses = async () => {
-    if (!user) {
+    console.log("🚀 fetchCourses called");
+    if (!user && !account) {
+      console.log("❌ No user or wallet connected, returning early");
       return;
     }
 
     setLoading(true);
     try {
+      console.log("📊 Fetching courses from IndexedDB...");
       // Get courses from IndexedDB
       const storedCourses = await courseStorage.getAllCourses();
+      console.log("📈 Raw stored courses:", storedCourses);
 
       // Convert stored courses to Course interface format
       const courseData: Course[] = storedCourses.map(storedCourse => ({
@@ -407,9 +422,10 @@ const CourseCreationForm: React.FC = () => {
         objectId: storedCourse.objectId,
       }));
 
+      console.log("✅ Converted course data:", courseData);
       setCourses(courseData);
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      console.error("❌ Error fetching courses:", error);
       alert("Failed to fetch courses. Check console for details.");
     } finally {
       setLoading(false);
@@ -423,10 +439,16 @@ const CourseCreationForm: React.FC = () => {
   // }, [account?.address]);
 
   useEffect(() => {
-    if (activeTab === "view courses" && user) {
-      fetchCourses();
+    console.log("🔍 useEffect triggered - activeTab:", activeTab, "user:", user, "account:", account);
+    if (activeTab === "view courses") {
+      if (user || account) {
+        console.log("✅ User authenticated or wallet connected, fetching courses...");
+        fetchCourses();
+      } else {
+        console.log("⚠️ User not authenticated and no wallet connected, skipping course fetch");
+      }
     }
-  }, [activeTab, user]);
+  }, [activeTab, user, account]);
 
   useEffect(() => {
     // Load available lesson content files
@@ -617,7 +639,7 @@ const CourseCreationForm: React.FC = () => {
         </div>
         <button
           onClick={fetchCourses}
-          disabled={loading || !user}
+          disabled={loading || (!user && !account)}
           className="bg-black flex items-center gap-2 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
         >
           {loading ? (
@@ -631,13 +653,32 @@ const CourseCreationForm: React.FC = () => {
 
       {/* Courses List */}
       <div className="mt-8">
-        {!user ? (
+        {(!user && !account) ? (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-4">Please connect your wallet to view your courses</p>
             <p className="text-sm text-gray-500">You need to be authenticated to manage courses</p>
           </div>
         ) : courses.length === 0 ? (
-          <p className="text-gray-600 text-center">No courses found. Create your first course!</p>
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">No courses found. Create your first course!</p>
+            <button
+              onClick={async () => {
+                console.log("🔍 Checking IndexedDB contents...");
+                try {
+                  const allCourses = await courseStorage.getAllCourses();
+                  const publishedCourses = await courseStorage.getPublishedCourses();
+                  console.log("📊 All courses in DB:", allCourses);
+                  console.log("📊 Published courses in DB:", publishedCourses);
+                  alert(`Found ${allCourses.length} total courses, ${publishedCourses.length} published courses`);
+                } catch (error) {
+                  console.error("❌ Error checking DB:", error);
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium mb-4"
+            >
+              Check Database
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map((course) => (
