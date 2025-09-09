@@ -472,7 +472,7 @@ const CourseCreationForm: React.FC = () => {
     try {
       // For now, we'll hardcode the available lessons
       // In a real app, you might fetch this from an API or scan the folder
-      const lessons = ['sui-move.mdx'];
+      const lessons = ['sui-move.mdx', 'java-basics.mdx'];
       setAvailableLessons(lessons);
     } catch (error) {
       console.error('Error loading available lessons:', error);

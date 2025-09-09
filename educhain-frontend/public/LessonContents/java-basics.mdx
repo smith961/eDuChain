@@ -1,0 +1,216 @@
+# Java Basics Fundamentals
+
+## Introduction to Java
+
+Java is a high-level, object-oriented programming language that is widely used for building enterprise applications, mobile apps, web applications, and more. Created by James Gosling at Sun Microsystems in 1995, Java has become one of the most popular programming languages in the world.
+
+## Key Features of Java
+
+### 1. Platform Independence
+Java programs can run on any platform that has a Java Virtual Machine (JVM) installed. This is achieved through the "Write Once, Run Anywhere" principle.
+
+### 2. Object-Oriented Programming
+Java is built around the concept of objects and classes, making it easy to organize and structure code.
+
+### 3. Automatic Memory Management
+Java has built-in garbage collection that automatically manages memory allocation and deallocation.
+
+## Basic Syntax
+
+### Hello World Program
+
+```java
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+```
+
+### Variables and Data Types
+
+```java
+// Primitive data types
+int age = 25;
+double salary = 50000.50;
+boolean isStudent = true;
+char grade = 'A';
+String name = "John Doe";
+
+// Variable declaration and initialization
+int number;        // Declaration
+number = 10;       // Initialization
+int value = 20;    // Declaration and initialization
+```
+
+### Control Structures
+
+#### If-Else Statement
+```java
+int score = 85;
+
+if (score >= 90) {
+    System.out.println("Grade: A");
+} else if (score >= 80) {
+    System.out.println("Grade: B");
+} else if (score >= 70) {
+    System.out.println("Grade: C");
+} else {
+    System.out.println("Grade: F");
+}
+```
+
+#### For Loop
+```java
+// Traditional for loop
+for (int i = 0; i < 5; i++) {
+    System.out.println("Count: " + i);
+}
+
+// Enhanced for loop (for-each)
+int[] numbers = {1, 2, 3, 4, 5};
+for (int num : numbers) {
+    System.out.println("Number: " + num);
+}
+```
+
+#### While Loop
+```java
+int counter = 0;
+while (counter < 5) {
+    System.out.println("Counter: " + counter);
+    counter++;
+}
+```
+
+## Classes and Objects
+
+### Class Definition
+```java
+public class Person {
+    // Instance variables
+    private String name;
+    private int age;
+
+    // Constructor
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    // Getter methods
+    public String getName() {
+        return name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    // Setter methods
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    // Method
+    public void displayInfo() {
+        System.out.println("Name: " + name + ", Age: " + age);
+    }
+}
+```
+
+### Object Creation and Usage
+```java
+public class Main {
+    public static void main(String[] args) {
+        // Create objects
+        Person person1 = new Person("Alice", 25);
+        Person person2 = new Person("Bob", 30);
+
+        // Use objects
+        person1.displayInfo();
+        person2.displayInfo();
+
+        // Modify object state
+        person1.setAge(26);
+        System.out.println(person1.getName() + " is now " + person1.getAge() + " years old");
+    }
+}
+```
+
+## Arrays
+
+### Array Declaration and Initialization
+```java
+// Declare and initialize array
+int[] numbers = new int[5];
+int[] values = {1, 2, 3, 4, 5};
+String[] names = {"Alice", "Bob", "Charlie"};
+
+// Access array elements
+System.out.println(values[0]);  // Output: 1
+System.out.println(names[2]);   // Output: Charlie
+
+// Array length
+System.out.println(values.length);  // Output: 5
+```
+
+### Multidimensional Arrays
+```java
+// 2D array
+int[][] matrix = {
+    {1, 2, 3},
+    {4, 5, 6},
+    {7, 8, 9}
+};
+
+// Access 2D array elements
+System.out.println(matrix[0][0]);  // Output: 1
+System.out.println(matrix[1][2]);  // Output: 6
+```
+
+## Exception Handling
+
+### Try-Catch Block
+```java
+public class ExceptionExample {
+    public static void main(String[] args) {
+        try {
+            int result = divide(10, 0);
+            System.out.println("Result: " + result);
+        } catch (ArithmeticException e) {
+            System.out.println("Error: " + e.getMessage());
+        } finally {
+            System.out.println("This always executes");
+        }
+    }
+
+    public static int divide(int a, int b) {
+        return a / b;
+    }
+}
+```
+
+## Summary
+
+This lesson covered the fundamental concepts of Java programming:
+
+- **Platform Independence**: Java's "Write Once, Run Anywhere" capability
+- **Basic Syntax**: Variables, data types, and control structures
+- **Object-Oriented Programming**: Classes, objects, and methods
+- **Arrays**: Single and multidimensional arrays
+- **Exception Handling**: Try-catch blocks for error management
+
+Java's simplicity, robustness, and cross-platform compatibility make it an excellent choice for both beginners and experienced developers. Practice these concepts by writing small programs and experimenting with different features.
+
+## Next Steps
+
+- Practice writing simple Java programs
+- Learn about inheritance and polymorphism
+- Explore Java collections and generics
+- Study file I/O operations
+- Understand multithreading concepts
