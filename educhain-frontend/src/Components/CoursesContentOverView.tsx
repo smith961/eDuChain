@@ -112,11 +112,13 @@ export default function CoursesContentOverView() {
 
   const fetchPublishedCourses = async () => {
     try {
+      console.log("🔍 Fetching published courses...");
       setIsLoading(true);
       setError(null);
 
       // Get published courses from IndexedDB
       const publishedCoursesData = await courseStorage.getPublishedCourses();
+      console.log("📊 Raw published courses data:", publishedCoursesData);
 
       // Convert to Course interface format
       const courses: Course[] = publishedCoursesData.map(storedCourse => ({
@@ -130,9 +132,15 @@ export default function CoursesContentOverView() {
         objectId: storedCourse.objectId,
       }));
 
+      console.log("✅ Converted courses for display:", courses);
       setPublishedCourses(courses);
+
+      if (courses.length === 0) {
+        console.log("⚠️ No published courses found in IndexedDB");
+      }
+
     } catch (error) {
-      console.error("Error fetching published courses:", error);
+      console.error("❌ Error fetching published courses:", error);
       setError('Failed to load courses');
     } finally {
       setIsLoading(false);
@@ -365,7 +373,29 @@ export default function CoursesContentOverView() {
                 </button>
               </div>
             ) : publishedCourses.length === 0 ? (
-              <p className="text-gray-400 col-span-2 text-center">No published courses available yet.</p>
+              <div className="col-span-2 text-center">
+                <p className="text-gray-400 mb-4">No published courses available yet.</p>
+                <button
+                  onClick={async () => {
+                    console.log("🔍 Checking IndexedDB contents...");
+                    try {
+                      const allCourses = await courseStorage.getAllCourses();
+                      const publishedCourses = await courseStorage.getPublishedCourses();
+                      console.log("📊 All courses in DB:", allCourses);
+                      console.log("📊 Published courses in DB:", publishedCourses);
+                      alert(`Found ${allCourses.length} total courses, ${publishedCourses.length} published courses`);
+                    } catch (error) {
+                      console.error("❌ Error checking DB:", error);
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium mb-4"
+                >
+                  Check Database
+                </button>
+                <p className="text-sm text-gray-500">
+                  Create and publish courses in the admin panel to see them here
+                </p>
+              </div>
             ) : (
               publishedCourses.map((course) => (
                 <div key={course.id} className="bg-gray-800 rounded-lg shadow-md border border-gray-700 overflow-hidden">
