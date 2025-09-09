@@ -4,7 +4,7 @@ import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
 // Create Sui client
 export const suiClient = new SuiClient({
-  url: getFullnodeUrl('devnet'), // Change to 'mainnet' for production
+  url: getFullnodeUrl('testnet'), // Using testnet for development and testing
 });
 
 // Export Transaction for use in components
@@ -152,4 +152,47 @@ export const getTransactionDetails = async (digest: string) => {
       showObjectChanges: true,
     },
   });
+};
+
+// Helper function to get platform stats from blockchain
+export const getPlatformStats = async (): Promise<{
+  totalUsers: number;
+  totalCourses: number;
+  totalXpAwarded: number;
+}> => {
+  const packageId = getPackageId();
+  const registryId = getRegistryId();
+
+  try {
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${packageId}::educhain::get_platform_stats`,
+      arguments: [tx.object(registryId)],
+    });
+
+    const result = await suiClient.devInspectTransactionBlock({
+      transactionBlock: tx,
+      sender: '0x0000000000000000000000000000000000000000000000000000000000000000',
+    });
+
+    if (result.results && result.results.length > 0) {
+      const returnValues = result.results[0].returnValues;
+      if (returnValues && returnValues.length >= 3) {
+        const totalUsers = Number(returnValues[0][0]);
+        const totalCourses = Number(returnValues[1][0]);
+        const totalXpAwarded = Number(returnValues[2][0]);
+
+        return {
+          totalUsers,
+          totalCourses,
+          totalXpAwarded,
+        };
+      }
+    }
+
+    throw new Error('Failed to parse platform stats');
+  } catch (error) {
+    console.error('Error fetching platform stats:', error);
+    throw error;
+  }
 };

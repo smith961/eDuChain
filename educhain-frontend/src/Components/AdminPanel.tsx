@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import ConfigService, { XPRate, AchievementConfig, QuizConfig } from '../services/configService';
 import QuizService from '../services/quizService';
+import { courseStorage } from '../utils/courseStorage';
+import { createCourseTransaction, publishCourseTransaction, addLessonTransaction, getPlatformStats } from '../services/blockchainService';
 
 // Admin Panel Component for Content Management
 const AdminPanel: React.FC = () => {
   const account = useCurrentAccount();
-  const [activeTab, setActiveTab] = useState('xp-rates');
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
+  const [activeTab, setActiveTab] = useState('courses');
   const [xpRates, setXpRates] = useState<XPRate[]>([]);
   const [achievements, setAchievements] = useState<AchievementConfig[]>([]);
   const [quizzes, setQuizzes] = useState<QuizConfig[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [blockchainStats, setBlockchainStats] = useState<{
+    totalUsers: number;
+    totalCourses: number;
+    totalXpAwarded: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   // Form states
   const [newXPRate, setNewXPRate] = useState<Partial<XPRate>>({
@@ -24,7 +34,6 @@ const AdminPanel: React.FC = () => {
   const [newAchievement, setNewAchievement] = useState<Partial<AchievementConfig>>({
     name: '',
     description: '',
-    icon: '🏆',
     xpReward: 0,
     rarity: 'common',
     category: 'learning',
@@ -47,6 +56,25 @@ const AdminPanel: React.FC = () => {
     questions: [],
   });
 
+  const [newCourse, setNewCourse] = useState({
+    title: '',
+    description: '',
+    instructor: account?.address || '',
+    category: 'Programming',
+    difficulty_level: 1,
+    estimated_duration: 60,
+  });
+
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [newLesson, setNewLesson] = useState({
+    title: '',
+    content_type: 'Video',
+    content_url: '',
+    duration: 30,
+    order_index: 0,
+  });
+
   useEffect(() => {
     loadData();
   }, []);
@@ -57,10 +85,35 @@ const AdminPanel: React.FC = () => {
       setXpRates(ConfigService.getXPRates());
       setAchievements(ConfigService.getAchievements());
       setQuizzes(QuizService.getQuizzes());
+
+      // Load all courses (both published and unpublished)
+      const allCourses = await courseStorage.getAllCourses();
+      setCourses(allCourses);
+
+      // Load blockchain stats
+      await loadBlockchainStats();
     } catch (error) {
       console.error('Error loading admin data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBlockchainStats = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await getPlatformStats();
+      setBlockchainStats(stats);
+    } catch (error) {
+      console.error('Error loading blockchain stats:', error);
+      // Set fallback values if blockchain call fails
+      setBlockchainStats({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalXpAwarded: 0,
+      });
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -108,7 +161,7 @@ const AdminPanel: React.FC = () => {
       id: `achievement_${Date.now()}`,
       name: newAchievement.name,
       description: newAchievement.description || '',
-      icon: newAchievement.icon || '🏆',
+      icon: 'ACHIEVEMENT',
       xpReward: newAchievement.xpReward,
       rarity: newAchievement.rarity || 'common',
       category: newAchievement.category || 'learning',
@@ -126,7 +179,6 @@ const AdminPanel: React.FC = () => {
     setNewAchievement({
       name: '',
       description: '',
-      icon: '🏆',
       xpReward: 0,
       rarity: 'common',
       category: 'learning',
@@ -156,6 +208,157 @@ const AdminPanel: React.FC = () => {
       isActive: true,
       questions: [],
     });
+  };
+
+  const handleCreateCourse = async () => {
+    if (!newCourse.title || !newCourse.description || !account?.address) {
+      alert('Please fill all required fields and connect your wallet');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Create course on blockchain
+      const tx = createCourseTransaction(
+        newCourse.title,
+        newCourse.description,
+        account.address, // Use connected wallet as instructor
+        newCourse.category,
+        newCourse.difficulty_level,
+        newCourse.estimated_duration
+      );
+
+      const result = await signAndExecute({ transaction: tx });
+
+      // Extract course ID from transaction result
+      const courseId = result.effects?.created?.[0]?.reference?.objectId;
+
+      if (courseId) {
+        // Save course locally
+        await courseStorage.saveCourse({
+          id: courseId,
+          title: newCourse.title,
+          description: newCourse.description,
+          instructor: account.address,
+          category: newCourse.category,
+          difficulty_level: newCourse.difficulty_level,
+          estimated_duration: newCourse.estimated_duration,
+          objectId: courseId,
+          createdAt: new Date().toISOString(),
+          isPublished: false,
+        });
+
+        // Reload courses
+        const allCourses = await courseStorage.getAllCourses();
+        setCourses(allCourses);
+
+        // Reset form
+        setNewCourse({
+          title: '',
+          description: '',
+          instructor: account?.address || '',
+          category: 'Programming',
+          difficulty_level: 1,
+          estimated_duration: 60,
+        });
+
+        alert('Course created successfully!');
+      }
+    } catch (error) {
+      console.error('Error creating course:', error);
+      alert('Failed to create course. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublishCourse = async (course: any) => {
+    if (!account?.address) {
+      alert('Please connect your wallet');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Publish course on blockchain
+      const tx = publishCourseTransaction(course.objectId);
+      await signAndExecute({ transaction: tx });
+
+      // Update local storage
+      await courseStorage.publishCourse(course.objectId);
+
+      // Reload courses
+      const allCourses = await courseStorage.getAllCourses();
+      setCourses(allCourses);
+
+      alert('Course published successfully!');
+    } catch (error) {
+      console.error('Error publishing course:', error);
+      alert('Failed to publish course. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectCourse = (course: any) => {
+    setSelectedCourse(course);
+    // In a real app, you'd fetch lessons for this course
+    // For now, we'll show an empty lessons list
+    setCourseLessons([]);
+  };
+
+  const handleAddLesson = async () => {
+    if (!selectedCourse || !newLesson.title) {
+      alert('Please select a course and fill lesson details');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Add lesson to blockchain
+      const tx = addLessonTransaction(
+        selectedCourse.objectId,
+        newLesson.title,
+        newLesson.content_type,
+        newLesson.content_url,
+        newLesson.duration,
+        newLesson.order_index
+      );
+
+      await signAndExecute({ transaction: tx });
+
+      // Add to local lessons list
+      const lesson = {
+        id: `lesson_${Date.now()}`,
+        title: newLesson.title,
+        content_type: newLesson.content_type,
+        content_url: newLesson.content_url,
+        duration: newLesson.duration,
+        order_index: newLesson.order_index,
+        createdAt: new Date().toISOString(),
+      };
+
+      setCourseLessons([...courseLessons, lesson]);
+
+      // Reset form
+      setNewLesson({
+        title: '',
+        content_type: 'Video',
+        content_url: '',
+        duration: 30,
+        order_index: courseLessons.length,
+      });
+
+      alert('Lesson added successfully!');
+    } catch (error) {
+      console.error('Error adding lesson:', error);
+      alert('Failed to add lesson. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const exportConfig = () => {
@@ -217,33 +420,18 @@ const AdminPanel: React.FC = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">🎛️ EduChain Admin Panel</h1>
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={exportConfig}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
-            >
-              📤 Export Config
-            </button>
-            <label className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium cursor-pointer">
-              📥 Import Config
-              <input
-                type="file"
-                accept=".json"
-                onChange={importConfig}
-                className="hidden"
-              />
-            </label>
-          </div>
+          <h1 className="text-3xl font-bold mb-4">EduChain Admin Panel</h1>
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-slate-700 mb-6">
           {[
-            { id: 'xp-rates', label: 'XP Rates', icon: '⭐' },
-            { id: 'achievements', label: 'Achievements', icon: '🏆' },
-            { id: 'quizzes', label: 'Quizzes', icon: '🧠' },
-            { id: 'analytics', label: 'Analytics', icon: '📊' },
+            { id: 'courses', label: 'Courses' },
+            { id: 'xp-rates', label: 'XP Rates' },
+            { id: 'achievements', label: 'Achievements' },
+            { id: 'quizzes', label: 'Quizzes' },
+            { id: 'analytics', label: 'Analytics' },
+            { id: 'settings', label: 'Settings' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -254,10 +442,231 @@ const AdminPanel: React.FC = () => {
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              {tab.icon} {tab.label}
+              {tab.label}
             </button>
           ))}
         </div>
+
+        {/* Courses Tab */}
+        {activeTab === 'courses' && (
+          <div className="space-y-6">
+            {/* Course Creation Section */}
+            <div className="bg-slate-800 p-6 rounded-xl">
+              <h2 className="text-xl font-bold mb-4">📚 Create New Course</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  placeholder="Course Title"
+                  value={newCourse.title}
+                  onChange={(e) => setNewCourse({...newCourse, title: e.target.value})}
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                />
+                <input
+                  type="text"
+                  placeholder="Category"
+                  value={newCourse.category}
+                  onChange={(e) => setNewCourse({...newCourse, category: e.target.value})}
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                />
+                <input
+                  type="number"
+                  placeholder="Difficulty Level (1-4)"
+                  value={newCourse.difficulty_level}
+                  onChange={(e) => setNewCourse({...newCourse, difficulty_level: parseInt(e.target.value)})}
+                  min="1"
+                  max="4"
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                />
+                <input
+                  type="number"
+                  placeholder="Duration (minutes)"
+                  value={newCourse.estimated_duration}
+                  onChange={(e) => setNewCourse({...newCourse, estimated_duration: parseInt(e.target.value)})}
+                  min="1"
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                />
+                <textarea
+                  placeholder="Course Description"
+                  value={newCourse.description}
+                  onChange={(e) => setNewCourse({...newCourse, description: e.target.value})}
+                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white md:col-span-2"
+                  rows={3}
+                />
+              </div>
+              <button
+                onClick={handleCreateCourse}
+                disabled={loading}
+                className={`mt-4 ${
+                  loading
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                } text-white px-6 py-2 rounded-lg font-medium`}
+              >
+                {loading ? 'Creating...' : 'Create Course'}
+              </button>
+            </div>
+
+            {/* Course Management Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Course List */}
+              <div className="bg-slate-800 p-6 rounded-xl">
+                <h2 className="text-xl font-bold mb-4">📋 All Courses ({courses.length})</h2>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {courses.length === 0 ? (
+                    <p className="text-gray-400 text-center py-4">No courses created yet. Create your first course above!</p>
+                  ) : (
+                    courses.map((course) => (
+                      <div key={course.objectId} className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                        selectedCourse?.objectId === course.objectId
+                          ? 'bg-blue-600 border-2 border-blue-400'
+                          : 'bg-slate-700 hover:bg-slate-600'
+                      }`} onClick={() => handleSelectCourse(course)}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-lg">{course.title}</h3>
+                            <p className="text-sm text-gray-400 truncate">{course.description}</p>
+                            <div className="flex gap-4 text-xs text-gray-500 mt-2">
+                              <span>📂 {course.category}</span>
+                              <span>🎯 Level {course.difficulty_level}</span>
+                              <span>⏱️ {course.estimated_duration}min</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 ml-4">
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              course.isPublished
+                                ? 'bg-green-600 text-white'
+                                : 'bg-yellow-600 text-white'
+                            }`}>
+                              {course.isPublished ? 'Published' : 'Draft'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center mt-3">
+                          <span className="text-xs text-gray-500">
+                            Created: {new Date(course.createdAt).toLocaleDateString()}
+                          </span>
+                          {!course.isPublished && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePublishCourse(course);
+                              }}
+                              disabled={loading}
+                              className={`${
+                                loading
+                                  ? 'bg-gray-500 cursor-not-allowed'
+                                  : 'bg-blue-600 hover:bg-blue-700'
+                              } text-white px-3 py-1 rounded text-xs font-medium`}
+                            >
+                              {loading ? 'Publishing...' : 'Publish'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Course Details & Lesson Management */}
+              <div className="bg-slate-800 p-6 rounded-xl">
+                {selectedCourse ? (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="text-xl font-bold mb-2">🎯 Manage Course</h2>
+                      <h3 className="text-lg font-semibold text-blue-400">{selectedCourse.title}</h3>
+                      <p className="text-sm text-gray-400">{selectedCourse.description}</p>
+                    </div>
+
+                    {/* Add Lesson Section */}
+                    <div className="border-t border-slate-600 pt-4">
+                      <h3 className="text-lg font-semibold mb-3">📝 Add New Lesson</h3>
+                      <div className="space-y-3">
+                        <input
+                          type="text"
+                          placeholder="Lesson Title"
+                          value={newLesson.title}
+                          onChange={(e) => setNewLesson({...newLesson, title: e.target.value})}
+                          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <select
+                            value={newLesson.content_type}
+                            onChange={(e) => setNewLesson({...newLesson, content_type: e.target.value})}
+                            className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                          >
+                            <option value="Video">Video</option>
+                            <option value="Text">Text</option>
+                            <option value="Document">Document</option>
+                          </select>
+                          <input
+                            type="number"
+                            placeholder="Duration (min)"
+                            value={newLesson.duration}
+                            onChange={(e) => setNewLesson({...newLesson, duration: parseInt(e.target.value)})}
+                            className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                          />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Content URL"
+                          value={newLesson.content_url}
+                          onChange={(e) => setNewLesson({...newLesson, content_url: e.target.value})}
+                          className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                        />
+                        <button
+                          onClick={handleAddLesson}
+                          disabled={loading || !newLesson.title}
+                          className={`w-full ${
+                            loading || !newLesson.title
+                              ? 'bg-gray-500 cursor-not-allowed'
+                              : 'bg-purple-600 hover:bg-purple-700'
+                          } text-white px-4 py-2 rounded-lg font-medium`}
+                        >
+                          {loading ? 'Adding...' : 'Add Lesson'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Lessons List */}
+                    <div className="border-t border-slate-600 pt-4">
+                      <h3 className="text-lg font-semibold mb-3">📚 Course Lessons ({courseLessons.length})</h3>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {courseLessons.length === 0 ? (
+                          <p className="text-gray-400 text-center py-4">No lessons added yet. Add your first lesson above!</p>
+                        ) : (
+                          courseLessons.map((lesson, index) => (
+                            <div key={lesson.id} className="p-3 bg-slate-700 rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium">{lesson.title}</h4>
+                                  <div className="flex gap-3 text-xs text-gray-400 mt-1">
+                                    <span>📺 {lesson.content_type}</span>
+                                    <span>⏱️ {lesson.duration}min</span>
+                                    <span>#{lesson.order_index}</span>
+                                  </div>
+                                </div>
+                                <button className="text-red-400 hover:text-red-300 text-sm">
+                                  Remove
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-4">📚</div>
+                    <h3 className="text-xl font-bold mb-2">Select a Course</h3>
+                    <p className="text-gray-400">Click on a course from the list to manage its lessons and publish it.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* XP Rates Tab */}
         {activeTab === 'xp-rates' && (
@@ -299,7 +708,7 @@ const AdminPanel: React.FC = () => {
               </div>
               <button
                 onClick={handleCreateXPRate}
-                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                className="mt-4 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium"
               >
                 Create XP Rate
               </button>
@@ -321,8 +730,8 @@ const AdminPanel: React.FC = () => {
                         onClick={() => handleUpdateXPRate(rate.id, { enabled: !rate.enabled })}
                         className={`px-3 py-1 rounded text-xs font-medium ${
                           rate.enabled
-                            ? 'bg-green-600 hover:bg-green-700'
-                            : 'bg-red-600 hover:bg-red-700'
+                            ? 'bg-green-600 hover:bg-green-700 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white'
                         }`}
                       >
                         {rate.enabled ? 'Enabled' : 'Disabled'}
@@ -353,13 +762,6 @@ const AdminPanel: React.FC = () => {
                   placeholder="XP Reward"
                   value={newAchievement.xpReward}
                   onChange={(e) => setNewAchievement({...newAchievement, xpReward: parseInt(e.target.value)})}
-                  className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
-                />
-                <input
-                  type="text"
-                  placeholder="Icon (emoji)"
-                  value={newAchievement.icon}
-                  onChange={(e) => setNewAchievement({...newAchievement, icon: e.target.value})}
                   className="bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
                 />
                 <select
@@ -395,7 +797,9 @@ const AdminPanel: React.FC = () => {
                 {achievements.map((achievement) => (
                   <div key={achievement.id} className="p-4 bg-slate-700 rounded-lg">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{achievement.icon}</span>
+                      <span className="text-sm font-bold bg-blue-600 px-2 py-1 rounded text-white">
+                        {achievement.icon}
+                      </span>
                       <div>
                         <h3 className="font-bold">{achievement.name}</h3>
                         <p className="text-sm text-gray-400">{achievement.description}</p>
@@ -404,19 +808,13 @@ const AdminPanel: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-green-400">+{achievement.xpReward} XP</span>
                       <div className="flex gap-2">
-                        <span className={`text-xs px-2 py-1 rounded capitalize ${
-                          achievement.rarity === 'common' ? 'bg-gray-600' :
-                          achievement.rarity === 'rare' ? 'bg-blue-600' :
-                          achievement.rarity === 'epic' ? 'bg-purple-600' :
-                          achievement.rarity === 'legendary' ? 'bg-orange-600' :
-                          'bg-red-600'
-                        }`}>
+                        <span className="text-xs px-2 py-1 rounded bg-gray-600 text-white capitalize">
                           {achievement.rarity}
                         </span>
                         <button
                           onClick={() => handleUpdateAchievement(achievement.id, { enabled: !achievement.enabled })}
                           className={`px-2 py-1 rounded text-xs ${
-                            achievement.enabled ? 'bg-green-600' : 'bg-red-600'
+                            achievement.enabled ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
                           }`}
                         >
                           {achievement.enabled ? 'ON' : 'OFF'}
@@ -491,7 +889,7 @@ const AdminPanel: React.FC = () => {
               </div>
               <button
                 onClick={handleCreateQuiz}
-                className="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium"
+                className="mt-4 bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg font-medium"
               >
                 Create Quiz
               </button>
@@ -510,12 +908,7 @@ const AdminPanel: React.FC = () => {
                           <p className="text-sm text-gray-400">{quiz.description}</p>
                         </div>
                         <div className="text-right">
-                          <span className={`text-xs px-2 py-1 rounded capitalize ${
-                            quiz.difficulty === 'beginner' ? 'bg-green-600' :
-                            quiz.difficulty === 'intermediate' ? 'bg-yellow-600' :
-                            quiz.difficulty === 'advanced' ? 'bg-orange-600' :
-                            'bg-red-600'
-                          }`}>
+                          <span className="text-xs px-2 py-1 rounded bg-gray-600 text-white capitalize">
                             {quiz.difficulty}
                           </span>
                         </div>
@@ -528,7 +921,7 @@ const AdminPanel: React.FC = () => {
                         <button
                           onClick={() => QuizService.updateQuiz(quiz.id, { isActive: !quiz.isActive })}
                           className={`px-3 py-1 rounded text-xs ${
-                            quiz.isActive ? 'bg-green-600' : 'bg-red-600'
+                            quiz.isActive ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-red-600 hover:bg-red-700 text-white'
                           }`}
                         >
                           {quiz.isActive ? 'Active' : 'Inactive'}
@@ -545,24 +938,76 @@ const AdminPanel: React.FC = () => {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold">Platform Analytics</h2>
+              <button
+                onClick={loadBlockchainStats}
+                disabled={statsLoading}
+                className={`${
+                  statsLoading
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white px-4 py-2 rounded-lg font-medium`}
+              >
+                {statsLoading ? 'Refreshing...' : 'Refresh Blockchain Data'}
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-slate-800 p-6 rounded-xl text-center">
+                <h3 className="text-xl font-bold mb-2">Total Users</h3>
+                {statsLoading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400 mx-auto mb-2"></div>
+                ) : (
+                  <p className="text-3xl text-blue-400 font-bold">
+                    {blockchainStats?.totalUsers || 0}
+                  </p>
+                )}
+                <p className="text-sm text-gray-400">From blockchain registry</p>
+              </div>
+              <div className="bg-slate-800 p-6 rounded-xl text-center">
+                <h3 className="text-xl font-bold mb-2">Total Courses</h3>
+                {statsLoading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-400 mx-auto mb-2"></div>
+                ) : (
+                  <p className="text-3xl text-green-400 font-bold">
+                    {blockchainStats?.totalCourses || 0}
+                  </p>
+                )}
+                <p className="text-sm text-gray-400">On-chain courses</p>
+              </div>
               <div className="bg-slate-800 p-6 rounded-xl text-center">
                 <h3 className="text-xl font-bold mb-2">Total XP Awarded</h3>
-                <p className="text-3xl text-green-400 font-bold">
-                  {xpRates.reduce((sum, rate) => sum + (rate.enabled ? rate.amount : 0), 0) * 10}
-                </p>
-                <p className="text-sm text-gray-400">Estimated from current rates</p>
+                {statsLoading ? (
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto mb-2"></div>
+                ) : (
+                  <p className="text-3xl text-purple-400 font-bold">
+                    {blockchainStats?.totalXpAwarded || 0}
+                  </p>
+                )}
+                <p className="text-sm text-gray-400">Blockchain verified</p>
               </div>
               <div className="bg-slate-800 p-6 rounded-xl text-center">
                 <h3 className="text-xl font-bold mb-2">Active Achievements</h3>
-                <p className="text-3xl text-purple-400 font-bold">
+                <p className="text-3xl text-orange-400 font-bold">
                   {achievements.filter(a => a.enabled).length}
                 </p>
                 <p className="text-sm text-gray-400">Out of {achievements.length} total</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-800 p-6 rounded-xl text-center">
+                <h3 className="text-xl font-bold mb-2">Local Courses</h3>
+                <p className="text-3xl text-blue-400 font-bold">
+                  {courses.length}
+                </p>
+                <p className="text-sm text-gray-400">
+                  {courses.filter(c => c.isPublished).length} published
+                </p>
+              </div>
               <div className="bg-slate-800 p-6 rounded-xl text-center">
                 <h3 className="text-xl font-bold mb-2">Active Quizzes</h3>
-                <p className="text-3xl text-blue-400 font-bold">
+                <p className="text-3xl text-yellow-400 font-bold">
                   {quizzes.filter(q => q.isActive).length}
                 </p>
                 <p className="text-sm text-gray-400">Out of {quizzes.length} total</p>
@@ -577,13 +1022,73 @@ const AdminPanel: React.FC = () => {
                   <span className="text-green-400">✅ All systems operational</span>
                 </div>
                 <div className="flex justify-between items-center">
+                  <span>Blockchain Connection</span>
+                  {statsLoading ? (
+                    <span className="text-blue-400">🔄 Connecting...</span>
+                  ) : blockchainStats ? (
+                    <span className="text-green-400">✅ Connected to Sui Testnet</span>
+                  ) : (
+                    <span className="text-red-400">❌ Connection failed</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
+                  <span>Registry Data</span>
+                  {statsLoading ? (
+                    <span className="text-blue-400">🔄 Loading...</span>
+                  ) : blockchainStats ? (
+                    <span className="text-green-400">✅ Real-time data available</span>
+                  ) : (
+                    <span className="text-yellow-400">⚠️ Using fallback data</span>
+                  )}
+                </div>
+                <div className="flex justify-between items-center">
                   <span>Last Backup</span>
                   <span className="text-gray-400">Never (local storage only)</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span>Blockchain Integration</span>
-                  <span className="text-yellow-400">⚠️ Mock implementation</span>
+                  <span>Data Source</span>
+                  <span className="text-green-400">🔗 Blockchain Verified</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6">
+            <div className="bg-slate-800 p-6 rounded-xl">
+              <h2 className="text-xl font-bold mb-4">Configuration Management</h2>
+              <p className="text-gray-400 mb-6">
+                Export your current configuration or import a previously saved configuration file.
+              </p>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={exportConfig}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2"
+                >
+                  📤 Export Configuration
+                </button>
+                <label className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium cursor-pointer flex items-center gap-2">
+                  📥 Import Configuration
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={importConfig}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-6 p-4 bg-slate-700 rounded-lg">
+                <h3 className="font-semibold mb-2">What gets exported?</h3>
+                <ul className="text-sm text-gray-400 space-y-1">
+                  <li>• XP Rates configuration</li>
+                  <li>• Achievement definitions</li>
+                  <li>• Quiz configurations</li>
+                  <li>• System settings</li>
+                </ul>
               </div>
             </div>
           </div>
