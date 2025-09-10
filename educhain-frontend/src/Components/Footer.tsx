@@ -1,5 +1,5 @@
 import { GitHubLogoIcon } from "@radix-ui/react-icons"
-import { Book, Twitter, Github, MessageCircle, Shield, X } from "lucide-react"
+import { Book,  MessageCircle, Shield, X } from "lucide-react"
 
 const Footer = () => {
   return (

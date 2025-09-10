@@ -56,16 +56,16 @@ const AdminPanel: React.FC = () => {
     questions: [],
   });
 
-  const [selectedQuiz, setSelectedQuiz] = useState<QuizConfig | null>(null);
-  const [newQuestion, setNewQuestion] = useState({
-    question: '',
-    type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'short_answer' | 'code',
-    options: ['', '', '', ''],
-    correctAnswer: 0,
-    explanation: '',
-    points: 10,
-    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
-  });
+  // const [selectedQuiz, setSelectedQuiz] = useState<QuizConfig | null>(null);
+  // const [newQuestion, setNewQuestion] = useState({
+  //   question: '',
+  //   type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'short_answer' | 'code',
+  //   options: ['', '', '', ''],
+  //   correctAnswer: 0,
+  //   explanation: '',
+  //   points: 10,
+  //   difficulty: 'easy' as 'easy' | 'medium' | 'hard'
+  // });
 
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -234,65 +234,65 @@ const AdminPanel: React.FC = () => {
     });
   };
 
-  const handleSelectQuiz = (quiz: QuizConfig) => {
-    setSelectedQuiz(quiz);
-    setNewQuestion({
-      question: '',
-      type: 'multiple_choice',
-      options: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      points: 10,
-      difficulty: 'easy'
-    });
-  };
+  // const handleSelectQuiz = (quiz: QuizConfig) => {
+  //   setSelectedQuiz(quiz);
+  //   setNewQuestion({
+  //     question: '',
+  //     type: 'multiple_choice',
+  //     options: ['', '', '', ''],
+  //     correctAnswer: 0,
+  //     explanation: '',
+  //     points: 10,
+  //     difficulty: 'easy'
+  //   });
+  // };
 
-  const handleAddQuestion = () => {
-    if (!selectedQuiz || !newQuestion.question) return;
+  // const handleAddQuestion = () => {
+  //   if (!selectedQuiz || !newQuestion.question) return;
 
-    const question = {
-      id: `q_${Date.now()}`,
-      question: newQuestion.question,
-      type: newQuestion.type,
-      options: newQuestion.options,
-      correctAnswer: newQuestion.correctAnswer,
-      explanation: newQuestion.explanation,
-      points: newQuestion.points,
-      difficulty: newQuestion.difficulty
-    };
+  //   const question = {
+  //     id: `q_${Date.now()}`,
+  //     question: newQuestion.question,
+  //     type: newQuestion.type,
+  //     options: newQuestion.options,
+  //     correctAnswer: newQuestion.correctAnswer,
+  //     explanation: newQuestion.explanation,
+  //     points: newQuestion.points,
+  //     difficulty: newQuestion.difficulty
+  //   };
 
-    const updatedQuiz = {
-      ...selectedQuiz,
-      questions: [...selectedQuiz.questions, question]
-    };
+  //   const updatedQuiz = {
+  //     ...selectedQuiz,
+  //     questions: [...selectedQuiz.questions, question]
+  //   };
 
-    QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuiz.questions });
-    setQuizzes(QuizService.getQuizzes());
-    setSelectedQuiz(updatedQuiz);
+  //   QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuiz.questions });
+  //   setQuizzes(QuizService.getQuizzes());
+  //   setSelectedQuiz(updatedQuiz);
 
-    // Reset form
-    setNewQuestion({
-      question: '',
-      type: 'multiple_choice',
-      options: ['', '', '', ''],
-      correctAnswer: 0,
-      explanation: '',
-      points: 10,
-      difficulty: 'easy'
-    });
-  };
+  //   // Reset form
+  //   setNewQuestion({
+  //     question: '',
+  //     type: 'multiple_choice',
+  //     options: ['', '', '', ''],
+  //     correctAnswer: 0,
+  //     explanation: '',
+  //     points: 10,
+  //     difficulty: 'easy'
+  //   });
+  // };
 
-  const handleDeleteQuestion = (questionId: string) => {
-    if (!selectedQuiz) return;
+  // const handleDeleteQuestion = (questionId: string) => {
+  //   if (!selectedQuiz) return;
 
-    const updatedQuestions = selectedQuiz.questions.filter(q => q.id !== questionId);
-    QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuestions });
-    setQuizzes(QuizService.getQuizzes());
-    setSelectedQuiz({
-      ...selectedQuiz,
-      questions: updatedQuestions
-    });
-  };
+  //   const updatedQuestions = selectedQuiz.questions.filter(q => q.id !== questionId);
+  //   QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuestions });
+  //   setQuizzes(QuizService.getQuizzes());
+  //   setSelectedQuiz({
+  //     ...selectedQuiz,
+  //     questions: updatedQuestions
+  //   });
+  // };
 
   const handleManualAddCourse = async () => {
     const courseId = prompt('Enter the Course Object ID from Sui Explorer (starts with 0x):');
@@ -912,7 +912,7 @@ const AdminPanel: React.FC = () => {
                         {courseLessons.length === 0 ? (
                           <p className="text-gray-400 text-center py-4">No lessons added yet. Add your first lesson above!</p>
                         ) : (
-                          courseLessons.map((lesson, index) => (
+                          courseLessons.map((lesson) => (
                             <div key={lesson.id} className="p-3 bg-slate-700 rounded-lg">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
+
 import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
 
