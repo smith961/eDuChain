@@ -1,36 +1,123 @@
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react'; // Import useState
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { useCurrentAccount } from '@mysten/dapp-kit';
+import { suiClient, getUserProfile, updateUserProfile, getUserAchievements, getUserNFTs } from '../services/blockchainService';
+import { useAuth } from '../contexts/AuthContext';
+import XPService from '../services/xpService';
 
 
 function ProfileHeader() {
+    const account = useCurrentAccount();
+    const [blockchainProfile, setBlockchainProfile] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadBlockchainProfile = async () => {
+            if (account?.address) {
+                try {
+                    const profile = await getUserProfile(account.address);
+                    setBlockchainProfile(profile);
+                } catch (error) {
+                    console.error('Error loading blockchain profile:', error);
+                }
+            }
+            setLoading(false);
+        };
+
+        loadBlockchainProfile();
+    }, [account?.address]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center mb-6">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                <span className="ml-2 text-gray-400">Loading profile...</span>
+            </div>
+        );
+    }
+
     return (
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
-                <img className="w-16 h-16 rounded-full mr-4" src="https://res.cloudinary.com/dkrpginfm/image/upload/v1756943015/alex-kim_lme9qf.jpg" alt="Sofia Ramirez" />
+                <div className="w-16 h-16 rounded-full mr-4 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-2xl">
+                  👶
+                </div>
                 <div>
-                    <h2 className="text-xl font-semibold text-white">Sofia Ramirez</h2>
-                    <p className="text-gray-400 text-sm">sofia@educhain.io</p>
+                    <h2 className="text-xl font-semibold text-white">
+                        {blockchainProfile?.username || 'Blockchain User'}
+                    </h2>
+                    <p className="text-gray-400 text-sm">
+                        {blockchainProfile?.email || 'user@educhain.io'}
+                    </p>
+                    <div className="flex items-center mt-1">
+                        <span className="text-xs bg-blue-600 px-2 py-1 rounded text-white mr-2">
+                            Level {blockchainProfile?.current_level || 1}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                            {blockchainProfile?.total_xp || 0} XP
+                        </span>
+                    </div>
                 </div>
             </div>
             <div className="flex space-x-2">
                 <button className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-md text-sm">Edit Profile</button>
-                <button className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-md text-sm">Copy DID</button>
+                <button
+                    className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-md text-sm"
+                    onClick={() => {
+                        if (account?.address) {
+                            navigator.clipboard.writeText(account.address);
+                            alert('Wallet address copied to clipboard!');
+                        }
+                    }}
+                >
+                    Copy DID
+                </button>
             </div>
         </div>
     );
 }
 
 function ProfileDetails() {
-    
+    const account = useCurrentAccount();
+    const { user } = useAuth();
+    const [blockchainProfile, setBlockchainProfile] = useState<any>(null);
     const [profile, setProfile] = useState({
-        displayName: 'Sofia Ramirez',
-        username: '@sofiar',
-        email: 'sofia@educhain.io',
-        wallet: '0x92c4...fA12',
+        displayName: '',
+        username: '',
+        email: '',
+        wallet: '',
         role: 'Learner',
-        location: 'Mexico City, MX',
+        location: '',
     });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        const loadProfileData = async () => {
+            if (account?.address) {
+                try {
+                    const bcProfile = await getUserProfile(account.address);
+                    setBlockchainProfile(bcProfile);
+
+                    // Set form data from blockchain
+                    setProfile({
+                        displayName: bcProfile.username || '',
+                        username: `@${bcProfile.username?.toLowerCase().replace(/\s+/g, '') || 'user'}`,
+                        email: bcProfile.email || '',
+                        wallet: `${account.address.slice(0, 6)}...${account.address.slice(-4)}`,
+                        role: 'Learner',
+                        location: '',
+                    });
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                }
+            }
+            setLoading(false);
+        };
+
+        loadProfileData();
+    }, [account?.address]);
 
     const handleChange = (e: { target: { name: any; value: any; }; }) => {
         const { name, value } = e.target;
@@ -40,11 +127,49 @@ function ProfileDetails() {
         }));
     };
 
-    const handleSaveChanges = () => {
-        
-        console.log("Saving changes:", profile);
-        alert("Profile changes saved! (Check console for data)");
+    const handleSaveChanges = async () => {
+        if (!account?.address) {
+            alert('Please connect your wallet first');
+            return;
+        }
+
+        try {
+            setSaving(true);
+
+            // Update profile on blockchain
+            const updates = {
+                username: profile.displayName,
+                email: profile.email,
+            };
+
+            await updateUserProfile(updates);
+
+            // Update local state
+            setBlockchainProfile({
+                ...blockchainProfile,
+                username: profile.displayName,
+                email: profile.email,
+            });
+
+            alert("Profile updated successfully on blockchain!");
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Failed to update profile. Please try again.');
+        } finally {
+            setSaving(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
+                <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                    <span className="ml-2 text-gray-400">Loading profile data...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
@@ -58,6 +183,7 @@ function ProfileDetails() {
                         value={profile.displayName}
                         onChange={handleChange}
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your display name"
                     />
                 </div>
                 <div>
@@ -68,6 +194,7 @@ function ProfileDetails() {
                         value={profile.username}
                         onChange={handleChange}
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your username"
                     />
                 </div>
                 <div>
@@ -78,10 +205,11 @@ function ProfileDetails() {
                         value={profile.email}
                         onChange={handleChange}
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter your email"
                     />
                 </div>
                 <div>
-                    <label className="block text-gray-400 mb-1">Wallet</label>
+                    <label className="block text-gray-400 mb-1">Wallet Address</label>
                     <input
                         type="text"
                         name="wallet"
@@ -90,6 +218,7 @@ function ProfileDetails() {
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         readOnly
                     />
+                    <p className="text-xs text-gray-500 mt-1">Connected wallet address</p>
                 </div>
                 <div>
                     <label className="block text-gray-400 mb-1">Role</label>
@@ -99,6 +228,7 @@ function ProfileDetails() {
                         value={profile.role}
                         onChange={handleChange}
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Your role (Learner/Instructor)"
                     />
                 </div>
                 <div>
@@ -109,15 +239,33 @@ function ProfileDetails() {
                         value={profile.location}
                         onChange={handleChange}
                         className="w-full bg-gray-700 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Your location"
                     />
                 </div>
             </div>
-            <button
-                onClick={handleSaveChanges}
-                className="mt-6 w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-md font-semibold"
-            >
-                Save Changes
-            </button>
+            <div className="mt-6 flex items-center justify-between">
+                <div className="text-sm text-gray-400">
+                    Changes are saved to the blockchain
+                </div>
+                <button
+                    onClick={handleSaveChanges}
+                    disabled={saving}
+                    className={`px-6 py-2 rounded-md font-semibold ${
+                        saving
+                            ? 'bg-gray-500 cursor-not-allowed'
+                            : 'bg-green-500 hover:bg-green-600'
+                    } text-white transition-colors`}
+                >
+                    {saving ? (
+                        <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Saving...
+                        </div>
+                    ) : (
+                        'Save to Blockchain'
+                    )}
+                </button>
+            </div>
         </div>
     );
 }
@@ -128,6 +276,29 @@ type ProgressBarProps = {
 };
 
 function XPProgress() {
+    const account = useCurrentAccount();
+    const [blockchainProfile, setBlockchainProfile] = useState<any>(null);
+    const [userXP, setUserXP] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadXPData = async () => {
+            if (account?.address) {
+                try {
+                    const profile = await getUserProfile(account.address);
+                    const xpData = await XPService.getUserXP(account.address);
+                    setBlockchainProfile(profile);
+                    setUserXP(xpData);
+                } catch (error) {
+                    console.error('Error loading XP data:', error);
+                }
+            }
+            setLoading(false);
+        };
+
+        loadXPData();
+    }, [account?.address]);
+
     const ProgressBar: React.FC<ProgressBarProps> = ({ label, percentage }) => (
         <div className="mb-3">
             <div className="flex justify-between text-sm mb-1">
@@ -140,22 +311,52 @@ function XPProgress() {
         </div>
     );
 
+    if (loading) {
+        return (
+            <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
+                <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                    <span className="ml-2 text-gray-400">Loading XP data...</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
             <h3 className="text-lg font-semibold text-white mb-4">XP & Progress</h3>
             <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                     <p className="text-gray-400 text-sm">Total XP</p>
-                    <p className="text-white text-2xl font-bold">12,980</p>
+                    <p className="text-white text-2xl font-bold">
+                        {userXP?.totalXP?.toLocaleString() || blockchainProfile?.total_xp?.toLocaleString() || '0'}
+                    </p>
                 </div>
                 <div>
-                    <p className="text-gray-400 text-sm">Streak</p>
-                    <p className="text-white text-2xl font-bold">21 days</p>
+                    <p className="text-gray-400 text-sm">Current Level</p>
+                    <p className="text-white text-2xl font-bold">
+                        {userXP?.currentLevel || blockchainProfile?.current_level || 1}
+                    </p>
                 </div>
             </div>
-            <h4 className="text-md font-semibold text-white mb-3">Current Courses</h4>
-            <ProgressBar label="Solidity Fundamentals" percentage={68} />
-            <ProgressBar label="DeFi Primitives" percentage={34} />
+            <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <p className="text-gray-400 text-sm">Login Streak</p>
+                    <p className="text-white text-lg font-bold">
+                        {blockchainProfile?.login_streak || 0} days
+                    </p>
+                </div>
+                <div>
+                    <p className="text-gray-400 text-sm">Courses Completed</p>
+                    <p className="text-white text-lg font-bold">
+                        {blockchainProfile?.courses_enrolled || 0}
+                    </p>
+                </div>
+            </div>
+            <h4 className="text-md font-semibold text-white mb-3">Learning Progress</h4>
+            <ProgressBar label="Lessons Completed" percentage={Math.min((blockchainProfile?.lessons_completed || 0) * 10, 100)} />
+            <ProgressBar label="Courses Enrolled" percentage={Math.min((blockchainProfile?.courses_enrolled || 0) * 25, 100)} />
+            <ProgressBar label="Overall Progress" percentage={Math.min((blockchainProfile?.total_xp || 0) / 10, 100)} />
         </div>
     );
 }
@@ -198,34 +399,108 @@ function LinkedAccounts() {
 
 
 function VerifiableCredentials() {
+    const account = useCurrentAccount();
+    const [achievements, setAchievements] = useState<any[]>([]);
+    const [nfts, setNfts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadCredentials = async () => {
+            if (account?.address) {
+                try {
+                    const userAchievements = await getUserAchievements(account.address);
+                    const userNFTs = await getUserNFTs(account.address);
+                    setAchievements(userAchievements);
+                    setNfts(userNFTs);
+                } catch (error) {
+                    console.error('Error loading credentials:', error);
+                }
+            }
+            setLoading(false);
+        };
+
+        loadCredentials();
+    }, [account?.address]);
+
+    if (loading) {
+        return (
+            <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
+                <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                    <span className="ml-2 text-gray-400">Loading credentials...</span>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-gray-800 p-6 rounded-lg mb-6 shadow-lg">
-            <h3 className="text-lg font-semibold text-white mb-4">Verifiable Credentials</h3>
-            <div className="bg-gray-700 p-4 rounded-md mb-4">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-white font-medium">Solidity Fundamentals</p>
-                    <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
-                        <FontAwesomeIcon icon={faCheckCircle} className="mr-1" /> Verified
-                    </span>
-                </div>
-                <p className="text-gray-400 text-sm mb-3">Issued by EduChain • Standard: Open Badges</p>
-                <div className="flex space-x-2">
-                    <button className="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded-md text-sm">View</button>
-                    <button className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md text-sm">Mint to Wallet</button>
-                </div>
-            </div>
+            <h3 className="text-lg font-semibold text-white mb-4">Blockchain Credentials</h3>
 
-            <div className="bg-gray-700 p-4 rounded-md">
-                <div className="flex items-center justify-between mb-2">
-                    <p className="text-white font-medium">Onchain Learner Level 1</p>
-                    <span className="bg-yellow-600 text-white text-xs px-2 py-1 rounded-full">Pending</span>
+            {/* Achievements */}
+            {achievements.length > 0 && (
+                <div className="mb-6">
+                    <h4 className="text-md font-semibold text-white mb-3">🏆 Achievements</h4>
+                    {achievements.filter(a => a.unlocked).map((achievement) => (
+                        <div key={achievement.id} className="bg-gray-700 p-4 rounded-md mb-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-white font-medium">{achievement.name}</p>
+                                <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center">
+                                    <FontAwesomeIcon icon={faCheckCircle} className="mr-1" /> Verified
+                                </span>
+                            </div>
+                            <p className="text-gray-400 text-sm mb-3">{achievement.description}</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">
+                                    Earned {new Date(achievement.unlockedAt).toLocaleDateString()}
+                                </span>
+                                <span className="text-xs bg-blue-600 px-2 py-1 rounded text-white">
+                                    +{achievement.xpReward} XP
+                                </span>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-                <p className="text-gray-400 text-sm mb-3">Awaiting mentor approval</p>
-                <div className="flex space-x-2">
-                    <button className="bg-green-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm">Request Review</button>
-                    <button className="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded-md text-sm">Share</button>
+            )}
+
+            {/* NFTs */}
+            {nfts.length > 0 && (
+                <div>
+                    <h4 className="text-md font-semibold text-white mb-3">🎨 NFTs</h4>
+                    {nfts.map((nft) => (
+                        <div key={nft.id} className="bg-gray-700 p-4 rounded-md mb-3">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-white font-medium">{nft.name}</p>
+                                <span className={`text-xs px-2 py-1 rounded-full flex items-center ${
+                                    nft.rarity === 'legendary' ? 'bg-purple-600' :
+                                    nft.rarity === 'epic' ? 'bg-orange-600' :
+                                    nft.rarity === 'rare' ? 'bg-blue-600' : 'bg-gray-600'
+                                } text-white`}>
+                                    {nft.rarity.toUpperCase()}
+                                </span>
+                            </div>
+                            <p className="text-gray-400 text-sm mb-3">{nft.description}</p>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-500">
+                                    Minted {new Date(nft.mintedAt).toLocaleDateString()}
+                                </span>
+                                <div className="flex space-x-2">
+                                    <button className="bg-gray-600 hover:bg-gray-500 text-white py-1 px-3 rounded-md text-xs">View</button>
+                                    <button className="bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded-md text-xs">Transfer</button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            </div>
+            )}
+
+            {achievements.length === 0 && nfts.length === 0 && (
+                <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🏆</div>
+                    <p className="text-gray-400">No blockchain credentials yet</p>
+                    <p className="text-sm text-gray-500 mt-2">Complete courses and earn achievements to get NFTs!</p>
+                </div>
+            )}
         </div>
     );
 }

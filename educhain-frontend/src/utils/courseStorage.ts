@@ -12,115 +12,121 @@ interface StoredCourse {
 }
 
 class CourseStorage {
-  private dbName = 'EduChainCourses';
-  private version = 1;
-
-  private async openDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, this.version);
-
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-
-        // Create courses store
-        if (!db.objectStoreNames.contains('courses')) {
-          const courseStore = db.createObjectStore('courses', { keyPath: 'objectId' });
-          courseStore.createIndex('createdAt', 'createdAt', { unique: false });
-          courseStore.createIndex('isPublished', 'isPublished', { unique: false });
-        }
-
-        // Create published courses store
-        if (!db.objectStoreNames.contains('publishedCourses')) {
-          db.createObjectStore('publishedCourses', { keyPath: 'objectId' });
-        }
-      };
-    });
-  }
+  private storageKey = 'educhain_courses';
+  private publishedKey = 'educhain_published_courses';
 
   async saveCourse(course: StoredCourse): Promise<void> {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['courses'], 'readwrite');
-      const store = transaction.objectStore('courses');
-      const request = store.put(course);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+    try {
+      console.log('CourseStorage: Saving course:', course);
+      const existingCourses = this.getAllCoursesSync();
+      const updatedCourses = [...existingCourses.filter((c: any) => c.objectId !== course.objectId), course];
+      localStorage.setItem(this.storageKey, JSON.stringify(updatedCourses));
+      console.log('CourseStorage: Course saved successfully');
+    } catch (error) {
+      console.error('CourseStorage: Failed to save course:', error);
+      throw error;
+    }
   }
 
   async getAllCourses(): Promise<StoredCourse[]> {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['courses'], 'readonly');
-      const store = transaction.objectStore('courses');
-      const request = store.getAll();
+    try {
+      console.log('CourseStorage: Loading courses from localStorage');
+      const courses = this.getAllCoursesSync();
+      console.log('CourseStorage: Loaded courses:', courses);
+      return courses;
+    } catch (error) {
+      console.error('CourseStorage: Failed to load courses:', error);
+      return [];
+    }
+  }
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+  private getAllCoursesSync(): StoredCourse[] {
+    try {
+      const courses = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+      return courses;
+    } catch (error) {
+      console.error('CourseStorage: Failed to parse courses:', error);
+      return [];
+    }
   }
 
   async publishCourse(courseId: string): Promise<void> {
-    const db = await this.openDB();
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Get course from courses store
-        const transaction = db.transaction(['courses', 'publishedCourses'], 'readwrite');
-        const courseStore = transaction.objectStore('courses');
-        const publishedStore = transaction.objectStore('publishedCourses');
+    try {
+      console.log('CourseStorage: Publishing course:', courseId);
+      const courses = this.getAllCoursesSync();
+      const courseIndex = courses.findIndex(c => c.objectId === courseId);
 
-        const courseRequest = courseStore.get(courseId);
+      if (courseIndex !== -1) {
+        courses[courseIndex].isPublished = true;
+        localStorage.setItem(this.storageKey, JSON.stringify(courses));
 
-        courseRequest.onsuccess = () => {
-          const course = courseRequest.result;
-          if (course) {
-            // Update course as published
-            course.isPublished = true;
-            courseStore.put(course);
+        // Add to published courses
+        const publishedCourses = this.getPublishedCoursesSync();
+        const updatedPublished = [...publishedCourses.filter(c => c.objectId !== courseId), courses[courseIndex]];
+        localStorage.setItem(this.publishedKey, JSON.stringify(updatedPublished));
 
-            // Add to published courses
-            publishedStore.put(course);
-          }
-          resolve();
-        };
-
-        courseRequest.onerror = () => reject(courseRequest.error);
-      } catch (error) {
-        reject(error);
+        console.log('CourseStorage: Course published successfully');
+      } else {
+        throw new Error('Course not found');
       }
-    });
+    } catch (error) {
+      console.error('CourseStorage: Failed to publish course:', error);
+      throw error;
+    }
   }
 
   async getPublishedCourses(): Promise<StoredCourse[]> {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['publishedCourses'], 'readonly');
-      const store = transaction.objectStore('publishedCourses');
-      const request = store.getAll();
+    try {
+      console.log('CourseStorage: Loading published courses');
+      const courses = this.getPublishedCoursesSync();
+      console.log('CourseStorage: Loaded published courses:', courses);
+      return courses;
+    } catch (error) {
+      console.error('CourseStorage: Failed to load published courses:', error);
+      return [];
+    }
+  }
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
+  private getPublishedCoursesSync(): StoredCourse[] {
+    try {
+      const courses = JSON.parse(localStorage.getItem(this.publishedKey) || '[]');
+      return courses;
+    } catch (error) {
+      console.error('CourseStorage: Failed to parse published courses:', error);
+      return [];
+    }
   }
 
   async clearAllData(): Promise<void> {
-    const db = await this.openDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction(['courses', 'publishedCourses'], 'readwrite');
+    try {
+      localStorage.removeItem(this.storageKey);
+      localStorage.removeItem(this.publishedKey);
+      console.log('CourseStorage: All data cleared');
+    } catch (error) {
+      console.error('CourseStorage: Failed to clear data:', error);
+      throw error;
+    }
+  }
 
-      const courseStore = transaction.objectStore('courses');
-      const publishedStore = transaction.objectStore('publishedCourses');
+  // Debug method to check current storage state
+  async debugStorage(): Promise<void> {
+    console.log('=== CourseStorage Debug ===');
 
-      courseStore.clear();
-      publishedStore.clear();
+    try {
+      const courses = JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+      console.log('localStorage courses:', courses);
+    } catch (error) {
+      console.error('localStorage debug error:', error);
+    }
 
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () => reject(transaction.error);
-    });
+    try {
+      const publishedCourses = JSON.parse(localStorage.getItem(this.publishedKey) || '[]');
+      console.log('localStorage published courses:', publishedCourses);
+    } catch (error) {
+      console.error('localStorage published debug error:', error);
+    }
+
+    console.log('=== End Debug ===');
   }
 }
 

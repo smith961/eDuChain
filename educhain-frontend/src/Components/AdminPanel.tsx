@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import ConfigService, { XPRate, AchievementConfig, QuizConfig } from '../services/configService';
 import QuizService from '../services/quizService';
 import { courseStorage } from '../utils/courseStorage';
-import { createCourseTransaction, publishCourseTransaction, addLessonTransaction, getPlatformStats } from '../services/blockchainService';
+import { createCourseTransaction, publishCourseTransaction, addLessonTransaction, getPlatformStats, getCourseFromBlockchain, suiClient } from '../services/blockchainService';
 
 // Admin Panel Component for Content Management
 const AdminPanel: React.FC = () => {
@@ -56,6 +56,17 @@ const AdminPanel: React.FC = () => {
     questions: [],
   });
 
+  const [selectedQuiz, setSelectedQuiz] = useState<QuizConfig | null>(null);
+  const [newQuestion, setNewQuestion] = useState({
+    question: '',
+    type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'short_answer' | 'code',
+    options: ['', '', '', ''],
+    correctAnswer: 0,
+    explanation: '',
+    points: 10,
+    difficulty: 'easy' as 'easy' | 'medium' | 'hard'
+  });
+
   const [newCourse, setNewCourse] = useState({
     title: '',
     description: '',
@@ -75,9 +86,22 @@ const AdminPanel: React.FC = () => {
     order_index: 0,
   });
 
+  // Rich text editor state
+  const [editorContent, setEditorContent] = useState('');
+  const [editorTitle, setEditorTitle] = useState('');
+  const [isPreview, setIsPreview] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     loadData();
   }, []);
+
+  // Initialize editor content
+  useEffect(() => {
+    if (editorRef.current && !editorContent) {
+      editorRef.current.innerHTML = '<div style="color: #9ca3af; font-style: italic;">Start writing your content here...</div>';
+    }
+  }, [editorContent]);
 
   const loadData = async () => {
     try {
@@ -210,6 +234,117 @@ const AdminPanel: React.FC = () => {
     });
   };
 
+  const handleSelectQuiz = (quiz: QuizConfig) => {
+    setSelectedQuiz(quiz);
+    setNewQuestion({
+      question: '',
+      type: 'multiple_choice',
+      options: ['', '', '', ''],
+      correctAnswer: 0,
+      explanation: '',
+      points: 10,
+      difficulty: 'easy'
+    });
+  };
+
+  const handleAddQuestion = () => {
+    if (!selectedQuiz || !newQuestion.question) return;
+
+    const question = {
+      id: `q_${Date.now()}`,
+      question: newQuestion.question,
+      type: newQuestion.type,
+      options: newQuestion.options,
+      correctAnswer: newQuestion.correctAnswer,
+      explanation: newQuestion.explanation,
+      points: newQuestion.points,
+      difficulty: newQuestion.difficulty
+    };
+
+    const updatedQuiz = {
+      ...selectedQuiz,
+      questions: [...selectedQuiz.questions, question]
+    };
+
+    QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuiz.questions });
+    setQuizzes(QuizService.getQuizzes());
+    setSelectedQuiz(updatedQuiz);
+
+    // Reset form
+    setNewQuestion({
+      question: '',
+      type: 'multiple_choice',
+      options: ['', '', '', ''],
+      correctAnswer: 0,
+      explanation: '',
+      points: 10,
+      difficulty: 'easy'
+    });
+  };
+
+  const handleDeleteQuestion = (questionId: string) => {
+    if (!selectedQuiz) return;
+
+    const updatedQuestions = selectedQuiz.questions.filter(q => q.id !== questionId);
+    QuizService.updateQuiz(selectedQuiz.id, { questions: updatedQuestions });
+    setQuizzes(QuizService.getQuizzes());
+    setSelectedQuiz({
+      ...selectedQuiz,
+      questions: updatedQuestions
+    });
+  };
+
+  const handleManualAddCourse = async () => {
+    const courseId = prompt('Enter the Course Object ID from Sui Explorer (starts with 0x):');
+    if (!courseId || !courseId.startsWith('0x')) {
+      alert('Please enter a valid Course ID starting with 0x');
+      return;
+    }
+
+    if (!newCourse.title || !newCourse.description) {
+      alert('Please fill in course title and description');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('Manually adding course with ID:', courseId);
+
+      await courseStorage.saveCourse({
+        id: courseId,
+        title: newCourse.title,
+        description: newCourse.description,
+        instructor: account?.address || '',
+        category: newCourse.category,
+        difficulty_level: newCourse.difficulty_level,
+        estimated_duration: newCourse.estimated_duration,
+        objectId: courseId,
+        createdAt: new Date().toISOString(),
+        isPublished: false,
+      });
+
+      const allCourses = await courseStorage.getAllCourses();
+      setCourses(allCourses);
+
+      // Reset form
+      setNewCourse({
+        title: '',
+        description: '',
+        instructor: account?.address || '',
+        category: 'Programming',
+        difficulty_level: 1,
+        estimated_duration: 60,
+      });
+
+      alert(`Course added successfully with ID: ${courseId}`);
+    } catch (error) {
+      console.error('Error adding course manually:', error);
+      alert('Failed to add course. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateCourse = async () => {
     if (!newCourse.title || !newCourse.description || !account?.address) {
       alert('Please fill all required fields and connect your wallet');
@@ -229,10 +364,65 @@ const AdminPanel: React.FC = () => {
         newCourse.estimated_duration
       );
 
-      const result = await signAndExecute({ transaction: tx });
+      const result = await signAndExecute({
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showObjectChanges: true,
+        }
+      });
 
-      // Extract course ID from transaction result
-      const courseId = result.effects?.created?.[0]?.reference?.objectId;
+      console.log('Transaction completed! Digest:', result.digest);
+
+      // Extract course ID using Sui SDK's built-in method
+      let courseId: string | null = null;
+
+      try {
+        console.log('🔍 Extracting course ID using Sui SDK...');
+
+        // Wait for transaction to be processed
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Get transaction details with full object information
+        const txDetails = await suiClient.getTransactionBlock({
+          digest: result.digest,
+          options: {
+            showEffects: true,
+            showObjectChanges: true,
+            showEvents: true,
+          },
+        });
+
+        console.log('📋 Transaction details retrieved');
+
+        // Extract from objectChanges (most reliable method)
+        if (txDetails.objectChanges && Array.isArray(txDetails.objectChanges)) {
+          console.log('🔎 Looking for course object in', txDetails.objectChanges.length, 'changes');
+
+          const courseChange = txDetails.objectChanges.find((change: any) => {
+            return change.type === 'created' &&
+                   change.objectType?.includes('::educhain::Course');
+          });
+
+          if (courseChange && 'objectId' in courseChange) {
+            courseId = (courseChange as any).objectId;
+            console.log('✅ Course ID found:', courseId);
+          }
+        }
+
+        // Fallback: Extract from effects
+        if (!courseId && txDetails.effects?.created && Array.isArray(txDetails.effects.created)) {
+          console.log('🔄 Fallback: checking effects.created');
+          if (txDetails.effects.created.length > 0) {
+            courseId = txDetails.effects.created[0].reference?.objectId;
+            console.log('✅ Course ID from effects:', courseId);
+          }
+        }
+
+        console.log('🎯 Final course ID:', courseId || 'EXTRACTION FAILED');
+      } catch (error) {
+        console.error('❌ Course ID extraction failed:', error);
+      }
 
       if (courseId) {
         // Save course locally
@@ -263,7 +453,60 @@ const AdminPanel: React.FC = () => {
           estimated_duration: 60,
         });
 
-        alert('Course created successfully!');
+        // Success - course created
+        console.log(`Course created successfully! ID: ${courseId}`);
+
+        // Verify course exists on blockchain
+        setTimeout(async () => {
+          if (courseId) {
+            const blockchainCourse = await getCourseFromBlockchain(courseId);
+            if (blockchainCourse) {
+              console.log('Course verified on blockchain:', blockchainCourse);
+            } else {
+              console.warn('Course not found on blockchain - may take a moment to propagate');
+            }
+          }
+        }, 2000);
+      } else {
+        console.error('Could not extract course ID from transaction result');
+        // Ask user to manually enter the course ID from Sui Explorer
+        const manualCourseId = prompt(
+          `🎉 Course created successfully!\n\n📋 Transaction: ${result.digest}\n\n🔍 Please:\n1. Open: https://suiexplorer.com/txblock/${result.digest}?network=testnet\n2. Find the Course object under "Created Objects"\n3. Copy the Object ID (starts with 0x)\n4. Paste it below:`,
+          ''
+        );
+
+        console.log('Prompt result:', manualCourseId);
+
+        if (manualCourseId && manualCourseId.startsWith('0x')) {
+          courseId = manualCourseId;
+          console.log('Using manually entered course ID:', courseId);
+
+          // Save with manually entered ID
+          console.log('Saving course to storage...');
+          await courseStorage.saveCourse({
+            id: courseId,
+            title: newCourse.title,
+            description: newCourse.description,
+            instructor: account.address,
+            category: newCourse.category,
+            difficulty_level: newCourse.difficulty_level,
+            estimated_duration: newCourse.estimated_duration,
+            objectId: courseId,
+            createdAt: new Date().toISOString(),
+            isPublished: false,
+          });
+          console.log('Course saved successfully');
+
+          console.log('Reloading courses from storage...');
+          const allCourses = await courseStorage.getAllCourses();
+          console.log('Loaded courses:', allCourses);
+          setCourses(allCourses);
+
+          alert(`Course saved with ID: ${courseId}`);
+        } else {
+          console.log('No valid course ID entered or prompt cancelled');
+          alert('Course created on blockchain! Check Sui Explorer with transaction digest: ' + result.digest);
+        }
       }
     } catch (error) {
       console.error('Error creating course:', error);
@@ -427,6 +670,7 @@ const AdminPanel: React.FC = () => {
         <div className="flex border-b border-slate-700 mb-6">
           {[
             { id: 'courses', label: 'Courses' },
+            { id: 'content-editor', label: 'Content Editor' },
             { id: 'xp-rates', label: 'XP Rates' },
             { id: 'achievements', label: 'Achievements' },
             { id: 'quizzes', label: 'Quizzes' },
@@ -493,24 +737,57 @@ const AdminPanel: React.FC = () => {
                   rows={3}
                 />
               </div>
-              <button
-                onClick={handleCreateCourse}
-                disabled={loading}
-                className={`mt-4 ${
-                  loading
-                    ? 'bg-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
-                } text-white px-6 py-2 rounded-lg font-medium`}
-              >
-                {loading ? 'Creating...' : 'Create Course'}
-              </button>
+              <div className="flex gap-4 mt-4">
+                <button
+                  onClick={handleCreateCourse}
+                  disabled={loading}
+                  className={`${
+                    loading
+                      ? 'bg-gray-500 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  } text-white px-6 py-2 rounded-lg font-medium`}
+                >
+                  {loading ? 'Creating...' : 'Create Course'}
+                </button>
+                <button
+                  onClick={handleManualAddCourse}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium"
+                >
+                  Add Existing Course
+                </button>
+              </div>
             </div>
 
             {/* Course Management Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Course List */}
               <div className="bg-slate-800 p-6 rounded-xl">
-                <h2 className="text-xl font-bold mb-4">📋 All Courses ({courses.length})</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">📋 All Courses ({courses.length})</h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        setLoading(true);
+                        const allCourses = await courseStorage.getAllCourses();
+                        setCourses(allCourses);
+                        setLoading(false);
+                        alert('Courses refreshed from storage!');
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                    >
+                      🔄 Refresh
+                    </button>
+                    <button
+                      onClick={async () => {
+                        await (courseStorage as any).debugStorage();
+                        alert('Check console for storage debug info!');
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm"
+                    >
+                      🐛 Debug Storage
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {courses.length === 0 ? (
                     <p className="text-gray-400 text-center py-4">No courses created yet. Create your first course above!</p>
@@ -609,7 +886,7 @@ const AdminPanel: React.FC = () => {
                         </div>
                         <input
                           type="text"
-                          placeholder="Content URL"
+                          placeholder="Content URL (optional - for external links)"
                           value={newLesson.content_url}
                           onChange={(e) => setNewLesson({...newLesson, content_url: e.target.value})}
                           className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white"
@@ -662,6 +939,236 @@ const AdminPanel: React.FC = () => {
                     <h3 className="text-xl font-bold mb-2">Select a Course</h3>
                     <p className="text-gray-400">Click on a course from the list to manage its lessons and publish it.</p>
                   </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content Editor Tab */}
+        {activeTab === 'content-editor' && (
+          <div className="space-y-6">
+            <div className="bg-slate-800 p-6 rounded-xl">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">📝 Rich Text Content Editor</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsPreview(!isPreview)}
+                    className={`px-4 py-2 rounded-lg font-medium ${
+                      isPreview
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    {isPreview ? 'Edit' : 'Preview'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const currentContent = editorRef.current?.innerHTML || editorContent;
+                      const content = {
+                        title: editorTitle,
+                        content: currentContent,
+                        createdAt: new Date().toISOString(),
+                        type: 'lesson'
+                      };
+                      localStorage.setItem(`draft_${Date.now()}`, JSON.stringify(content));
+                      alert('Content saved as draft!');
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
+                  >
+                    💾 Save Draft
+                  </button>
+                </div>
+              </div>
+
+              {/* Title Input */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Content Title"
+                  value={editorTitle}
+                  onChange={(e) => setEditorTitle(e.target.value)}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Editor Toolbar */}
+              {!isPreview && (
+                <div className="mb-4 p-3 bg-slate-700 rounded-lg">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => document.execCommand('bold')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium"
+                      title="Bold"
+                    >
+                      <strong>B</strong>
+                    </button>
+                    <button
+                      onClick={() => document.execCommand('italic')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium italic"
+                      title="Italic"
+                    >
+                      <em>I</em>
+                    </button>
+                    <button
+                      onClick={() => document.execCommand('underline')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm font-medium underline"
+                      title="Underline"
+                    >
+                      <u>U</u>
+                    </button>
+                    <div className="w-px h-6 bg-slate-500 mx-2"></div>
+                    <button
+                      onClick={() => document.execCommand('insertUnorderedList')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+                      title="Bullet List"
+                    >
+                      • List
+                    </button>
+                    <button
+                      onClick={() => document.execCommand('insertOrderedList')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+                      title="Numbered List"
+                    >
+                      1. List
+                    </button>
+                    <div className="w-px h-6 bg-slate-500 mx-2"></div>
+                    <button
+                      onClick={() => {
+                        const url = prompt('Enter URL:');
+                        if (url) document.execCommand('createLink', false, url);
+                      }}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+                      title="Insert Link"
+                    >
+                      🔗 Link
+                    </button>
+                    <button
+                      onClick={() => document.execCommand('formatBlock', false, 'h2')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+                      title="Heading"
+                    >
+                      H2
+                    </button>
+                    <button
+                      onClick={() => document.execCommand('formatBlock', false, 'blockquote')}
+                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded text-sm"
+                      title="Quote"
+                    >
+                      💬 Quote
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Editor Content */}
+              {isPreview ? (
+                <div className="bg-slate-700 p-6 rounded-lg min-h-96">
+                  <h1 className="text-2xl font-bold mb-4 text-white">{editorTitle || 'Untitled'}</h1>
+                  <div
+                    className="prose prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: (editorRef.current?.innerHTML || editorContent) || '<p class="text-gray-400">No content to preview</p>' }}
+                  />
+                </div>
+              ) : (
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white min-h-96 focus:outline-none focus:ring-2 focus:ring-blue-500 overflow-auto"
+                  style={{
+                    lineHeight: '1.6',
+                    fontFamily: 'inherit',
+                    fontSize: '16px',
+                    minHeight: '400px',
+                    outline: 'none',
+                    whiteSpace: 'pre-wrap',
+                    wordWrap: 'break-word'
+                  }}
+                  onInput={(e) => {
+                    const content = e.currentTarget.innerHTML;
+                    // Only update state if content actually changed
+                    if (content !== editorContent) {
+                      setEditorContent(content);
+                    }
+                  }}
+                  suppressContentEditableWarning={true}
+                  onFocus={(e) => {
+                    if (e.currentTarget.innerHTML.includes('Start writing your content here')) {
+                      e.currentTarget.innerHTML = '';
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!e.currentTarget.innerText.trim()) {
+                      e.currentTarget.innerHTML = '<div style="color: #9ca3af; font-style: italic;">Start writing your content here...</div>';
+                    }
+                  }}
+                />
+              )}
+
+              {/* Content Stats */}
+              <div className="mt-4 flex justify-between items-center text-sm text-gray-400">
+                <div>
+                  Words: {(editorRef.current?.innerText || editorContent.replace(/<[^>]*>/g, '')).split(/\s+/).filter((word: string) => word.length > 0).length}
+                </div>
+                <div>
+                  Characters: {(editorRef.current?.innerText || editorContent.replace(/<[^>]*>/g, '')).length}
+                </div>
+                <div>
+                  Last saved: {new Date().toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+
+            {/* Saved Drafts */}
+            <div className="bg-slate-800 p-6 rounded-xl">
+              <h3 className="text-lg font-bold mb-4">💾 Saved Drafts</h3>
+              <div className="space-y-3">
+                {Object.keys(localStorage)
+                  .filter(key => key.startsWith('draft_'))
+                  .map(key => {
+                    try {
+                      const draft = JSON.parse(localStorage.getItem(key) || '{}');
+                      return (
+                        <div key={key} className="flex items-center justify-between p-4 bg-slate-700 rounded-lg">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-white">{draft.title || 'Untitled'}</h4>
+                            <p className="text-sm text-gray-400">
+                              {new Date(draft.createdAt).toLocaleDateString()} •
+                              {draft.content?.replace(/<[^>]*>/g, '').split(/\s+/).filter((word: string) => word.length > 0).length || 0} words
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditorTitle(draft.title || '');
+                                setEditorContent(draft.content || '');
+                                if (editorRef.current) {
+                                  editorRef.current.innerHTML = draft.content || '';
+                                }
+                                setIsPreview(false);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Load
+                            </button>
+                            <button
+                              onClick={() => {
+                                localStorage.removeItem(key);
+                                window.location.reload();
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    } catch {
+                      return null;
+                    }
+                  })}
+                {Object.keys(localStorage).filter(key => key.startsWith('draft_')).length === 0 && (
+                  <p className="text-gray-400 text-center py-4">No saved drafts yet</p>
                 )}
               </div>
             </div>

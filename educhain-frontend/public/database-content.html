@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Fundamentals - EduChain Course</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        .code-block {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Database Fundamentals</h1>
+    <p><strong>Welcome to your Database Fundamentals course!</strong></p>
+
+    <h2>🎯 What You'll Learn</h2>
+    <ul>
+        <li>Understanding database concepts</li>
+        <li>SQL basics and queries</li>
+        <li>Database design principles</li>
+        <li>Data relationships and normalization</li>
+    </ul>
+
+    <h2>📋 Lesson 1: Introduction to Databases</h2>
+
+    <h3>What is a Database?</h3>
+    <p>A database is an organized collection of data that can be easily accessed, managed, and updated. Databases are used to store information in a structured way.</p>
+
+    <div class="highlight">
+        <strong>Key Points:</strong>
+        <ul>
+            <li>Databases store data persistently</li>
+            <li>Data is organized in tables with rows and columns</li>
+            <li>Databases support concurrent access by multiple users</li>
+            <li>Data integrity and security are built-in features</li>
+        </ul>
+    </div>
+
+    <h3>Types of Databases</h3>
+    <ul>
+        <li><strong>Relational Databases:</strong> Use tables with relationships (MySQL, PostgreSQL)</li>
+        <li><strong>NoSQL Databases:</strong> Flexible data models (MongoDB, Cassandra)</li>
+        <li><strong>Graph Databases:</strong> Store data as nodes and relationships (Neo4j)</li>
+    </ul>
+
+    <h2>💻 Lesson 2: SQL Basics</h2>
+
+    <h3>Basic SQL Commands</h3>
+
+    <h4>Creating a Table</h4>
+    <div class="code-block">
+CREATE TABLE students (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    age INTEGER,
+    enrollment_date DATE
+);
+    </div>
+
+    <h4>Inserting Data</h4>
+    <div class="code-block">
+INSERT INTO students (name, email, age, enrollment_date)
+VALUES ('John Doe', 'john@example.com', 20, '2024-01-15');
+    </div>
+
+    <h4>Querying Data</h4>
+    <div class="code-block">
+SELECT name, email, age
+FROM students
+WHERE age >= 18
+ORDER BY name;
+    </div>
+
+    <h2>🔗 Lesson 3: Database Relationships</h2>
+
+    <h3>Primary Keys and Foreign Keys</h3>
+    <ul>
+        <li><strong>Primary Key:</strong> Unique identifier for each record</li>
+        <li><strong>Foreign Key:</strong> References primary key in another table</li>
+        <li><strong>Relationships:</strong> One-to-One, One-to-Many, Many-to-Many</li>
+    </ul>
+
+    <h3>Example: Students and Courses</h3>
+    <div class="code-block">
+-- Students table
+CREATE TABLE students (
+    student_id INTEGER PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+-- Courses table
+CREATE TABLE courses (
+    course_id INTEGER PRIMARY KEY,
+    title VARCHAR(200),
+    instructor_id INTEGER
+);
+
+-- Enrollments table (junction table)
+CREATE TABLE enrollments (
+    student_id INTEGER,
+    course_id INTEGER,
+    grade VARCHAR(2),
+    FOREIGN KEY (student_id) REFERENCES students(student_id),
+    FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
+    </div>
+
+    <h2>📚 Practice Exercises</h2>
+
+    <h3>Exercise 1: Create Your First Table</h3>
+    <p>Create a table to store information about books in a library:</p>
+    <div class="code-block">
+CREATE TABLE books (
+    book_id INTEGER PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    author VARCHAR(100),
+    isbn VARCHAR(13) UNIQUE,
+    published_year INTEGER,
+    genre VARCHAR(50)
+);
+    </div>
+
+    <h3>Exercise 2: Insert Sample Data</h3>
+    <div class="code-block">
+INSERT INTO books (title, author, isbn, published_year, genre)
+VALUES
+('The Great Gatsby', 'F. Scott Fitzgerald', '9780743273565', 1925, 'Fiction'),
+('To Kill a Mockingbird', 'Harper Lee', '9780061120084', 1960, 'Fiction'),
+('1984', 'George Orwell', '9780451524935', 1949, 'Dystopian');
+    </div>
+
+    <h2>🎓 Next Steps</h2>
+    <p>Congratulations on completing the Database Fundamentals lesson! In the next lesson, we'll cover:</p>
+    <ul>
+        <li>Advanced SQL queries</li>
+        <li>Database normalization</li>
+        <li>Indexing and performance</li>
+        <li>Database security</li>
+    </ul>
+
+    <hr>
+    <p><em>This content is part of the EduChain Database Course. Created for educational purposes.</em></p>
+</body>
+</html>

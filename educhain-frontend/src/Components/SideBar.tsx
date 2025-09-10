@@ -12,6 +12,7 @@ import {
   FaUser,
   FaShieldAlt,
   FaFileAlt,
+  FaChartBar,
 } from "react-icons/fa"
 
 interface SidebarItemProps {
@@ -89,6 +90,13 @@ export default function Sidebar({ activePage, onPageChange }: SidebarProps) {
             icon={<FaGift />}
             label="XP & Rewards"
             page="rewards"
+            activePage={activePage}
+            onPageChange={onPageChange}
+          />
+          <SidebarItem
+            icon={<FaChartBar />}
+            label="Analytics"
+            page="analytics"
             activePage={activePage}
             onPageChange={onPageChange}
           />

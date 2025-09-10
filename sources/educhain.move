@@ -404,9 +404,8 @@ public entry fun sign_in(
 
  // ===== Course Management Functions =====
 
-    /// Create a new course (admin only)
+    /// Create a new course
     public entry fun create_course(
-        _: &AdminCap,
         registry: &mut EDUCHAINRegistry,
         title: String,
         description: String,
@@ -437,9 +436,8 @@ public entry fun sign_in(
         transfer::share_object(course);
     }
 
-  /// Add lesson to course (admin only)
+  /// Add lesson to course
     public entry fun add_lesson(
-        _: &AdminCap,
         course: &mut Course,
         title: String,
         content_type: String,
@@ -467,18 +465,16 @@ public entry fun sign_in(
     }
 
 
- /// Publish course (admin only)
+ /// Publish course
    public entry fun publish_course(
-       _: &AdminCap,
        course: &mut Course,
        _ctx: &mut TxContext
    ) {
        course.is_published = true;
    }
 
-   /// Create quiz for lesson (admin only)
+   /// Create quiz for lesson
    public entry fun create_quiz(
-       _: &AdminCap,
        course: &mut Course,
        lesson_index: u64,
        passing_score: u64,
@@ -500,9 +496,8 @@ public entry fun sign_in(
        transfer::share_object(quiz);
    }
 
-   /// Add quiz question (admin only)
+   /// Add quiz question
    public entry fun add_quiz_question(
-       _: &AdminCap,
        quiz: &mut Quiz,
        question: String,
        options: vector<String>,
