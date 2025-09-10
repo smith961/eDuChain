@@ -1,12 +1,7 @@
 
 
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
 import { useCurrentAccount } from "@mysten/dapp-kit";
-=======
-import { useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
-
->>>>>>> 4fec95f5488d84cc681facaf4981facbb74ae2ee
 import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
 import { getLessonsForCourse } from "../services/blockchainService";
