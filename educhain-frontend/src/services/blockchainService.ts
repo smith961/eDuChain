@@ -70,7 +70,6 @@ export const createCourseTransaction = (
 ): Transaction => {
   const tx = new Transaction();
   const packageId = getPackageId();
-  const adminCapId = getAdminCapId();
   const registryId = getRegistryId();
 
   const clock = tx.sharedObjectRef({
@@ -82,7 +81,6 @@ export const createCourseTransaction = (
   tx.moveCall({
     target: `${packageId}::educhain::create_course`,
     arguments: [
-      tx.object(adminCapId), // AdminCap object
       tx.object(registryId),
       tx.pure.string(title),
       tx.pure.string(description),
@@ -108,12 +106,10 @@ export const addLessonTransaction = (
 ): Transaction => {
   const tx = new Transaction();
   const packageId = getPackageId();
-  const adminCapId = getAdminCapId();
 
   tx.moveCall({
     target: `${packageId}::educhain::add_lesson`,
     arguments: [
-      tx.object(adminCapId),
       tx.object(courseId),
       tx.pure.string(title),
       tx.pure.string(contentType),
@@ -130,12 +126,10 @@ export const addLessonTransaction = (
 export const publishCourseTransaction = (courseId: string): Transaction => {
   const tx = new Transaction();
   const packageId = getPackageId();
-  const adminCapId = getAdminCapId();
 
   tx.moveCall({
     target: `${packageId}::educhain::publish_course`,
     arguments: [
-      tx.object(adminCapId),
       tx.object(courseId),
     ],
   });
@@ -152,6 +146,123 @@ export const getTransactionDetails = async (digest: string) => {
       showObjectChanges: true,
     },
   });
+};
+
+// Helper function to get user profile from blockchain
+export const getUserProfile = async (userAddress: string) => {
+  try {
+    // This would need to be implemented based on how profiles are stored
+    // For now, return mock data structure
+    const mockProfile = {
+      username: "Blockchain User",
+      email: "user@educhain.io",
+      total_xp: 1250,
+      current_level: 2,
+      courses_enrolled: 3,
+      lessons_completed: 15,
+      nfts_earned: 2,
+      last_login: Date.now(),
+      login_streak: 5,
+      registration_date: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
+      is_active: true,
+    };
+    return mockProfile;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+// Helper function to update user profile on blockchain
+export const updateUserProfile = async (updates: { username?: string; email?: string }) => {
+  // This would create a transaction to update the profile on blockchain
+  // For now, return a mock transaction
+  const mockTx = {
+    digest: `0x${Math.random().toString(16).substr(2, 64)}`,
+    effects: { status: { status: 'success' } },
+  };
+  return mockTx;
+};
+
+// Helper function to get user achievements from blockchain
+export const getUserAchievements = async (userAddress: string) => {
+  try {
+    // Mock achievements data
+    const mockAchievements = [
+      {
+        id: 'first_login',
+        name: 'Welcome to EduChain',
+        description: 'Successfully connected your wallet',
+        icon: '👋',
+        xpReward: 25,
+        unlocked: true,
+        unlockedAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
+        rarity: 'common',
+        blockchainVerified: true,
+      },
+      {
+        id: 'first_quiz',
+        name: 'Knowledge Seeker',
+        description: 'Completed your first quiz',
+        icon: '🧠',
+        xpReward: 50,
+        unlocked: true,
+        unlockedAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+        rarity: 'common',
+        blockchainVerified: true,
+      },
+      {
+        id: 'first_lesson',
+        name: 'Learning Journey Begins',
+        description: 'Completed your first lesson',
+        icon: '📚',
+        xpReward: 75,
+        unlocked: true,
+        unlockedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
+        rarity: 'common',
+        blockchainVerified: true,
+      },
+    ];
+    return mockAchievements;
+  } catch (error) {
+    console.error('Error fetching user achievements:', error);
+    return [];
+  }
+};
+
+// Helper function to get user NFTs from blockchain
+export const getUserNFTs = async (userAddress: string) => {
+  try {
+    // Mock NFTs data
+    const mockNFTs = [
+      {
+        id: 'nft_1',
+        name: 'Course Completion NFT',
+        description: 'Successfully completed Sui Move Fundamentals',
+        image: 'https://educhain.io/nft/course_completion.png',
+        achievement: 'Course Completion',
+        rarity: 'rare',
+        mintedAt: Date.now() - 4 * 24 * 60 * 60 * 1000,
+        contractAddress: '0x1::educhain::CompletionNFT',
+        tokenId: 'token_001',
+      },
+      {
+        id: 'nft_2',
+        name: 'Quiz Master NFT',
+        description: 'Passed 5 quizzes with perfect scores',
+        image: 'https://educhain.io/nft/quiz_master.png',
+        achievement: 'Quiz Master',
+        rarity: 'epic',
+        mintedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+        contractAddress: '0x1::educhain::CompletionNFT',
+        tokenId: 'token_002',
+      },
+    ];
+    return mockNFTs;
+  } catch (error) {
+    console.error('Error fetching user NFTs:', error);
+    return [];
+  }
 };
 
 // Helper function to get platform stats from blockchain
@@ -194,5 +305,40 @@ export const getPlatformStats = async (): Promise<{
   } catch (error) {
     console.error('Error fetching platform stats:', error);
     throw error;
+  }
+};
+
+// Helper function to get course details from blockchain
+export const getCourseFromBlockchain = async (courseId: string) => {
+  try {
+    const courseObject = await suiClient.getObject({
+      id: courseId,
+      options: {
+        showContent: true,
+        showType: true,
+      },
+    });
+
+    if (courseObject.data?.content?.dataType === 'moveObject') {
+      const fields = courseObject.data.content.fields as any;
+      return {
+        id: courseId,
+        title: fields.title,
+        description: fields.description,
+        instructor: fields.instructor,
+        category: fields.category,
+        difficulty_level: Number(fields.difficulty_level),
+        estimated_duration: Number(fields.estimated_duration),
+        isPublished: fields.is_published,
+        totalEnrollments: Number(fields.total_enrollments),
+        objectId: courseId,
+        createdAt: new Date(Number(fields.created_at)).toISOString(),
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error fetching course from blockchain:', error);
+    return null;
   }
 };

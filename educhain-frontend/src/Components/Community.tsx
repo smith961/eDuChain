@@ -44,7 +44,7 @@ export default function Community() {
                                 <tbody>
                                     <tr className="border-b border-gray-700 last:border-b-0">
                                         <td className="py-4 pr-4 flex items-center">
-                                            <img src="https://res-console.cloudinary.com/dkrpginfm/thumbnails/v1/image/upload/v1756943015/YWxleC1raW1fbG1lOXFm/drilldown" alt="Sofia Ramirez" className="w-9 h-9 rounded-full mr-3 object-cover" />
+                                            <div className="w-9 h-9 rounded-full mr-3 bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-sm">👶</div>
                                             <div>
                                                 <p className="font-semibold">Sofia Ramirez</p>
                                                 <p className="text-gray-400 text-sm">ZK Proofs: Intro</p>
@@ -59,7 +59,7 @@ export default function Community() {
                                     </tr>
                                     <tr className="border-b border-gray-700 last:border-b-0">
                                         <td className="py-4 pr-4 flex items-center">
-                                            <img src="https://res-console.cloudinary.com/dkrpginfm/thumbnails/v1/image/upload/v1756943015/YWxleC1raW1fbG1lOXFm/drilldown" alt="Marcus Lee" className="w-9 h-9 rounded-full mr-3 object-cover" />
+                                            <div className="w-9 h-9 rounded-full mr-3 bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-sm">👶</div>
                                             <div>
                                                 <p className="font-semibold">Marcus Lee</p>
                                                 <p className="text-gray-400 text-sm">Security: Gas Fusions</p>
@@ -74,7 +74,7 @@ export default function Community() {
                                     </tr>
                                     <tr className="border-b border-gray-700 last:border-b-0">
                                         <td className="py-4 pr-4 flex items-center">
-                                            <img src="https://res-console.cloudinary.com/dkrpginfm/thumbnails/v1/image/upload/v1756943015/YWxleC1raW1fbG1lOXFm/drilldown" alt="Ana Chen" className="w-9 h-9 rounded-full mr-3 object-cover" />
+                                            <div className="w-9 h-9 rounded-full mr-3 bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-sm">👶</div>
                                             <div>
                                                 <p className="font-semibold">Ana Chen</p>
                                                 <p className="text-gray-400 text-sm">Security: Reentrancy</p>
@@ -147,7 +147,7 @@ export default function Community() {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                                <img src="https://res-console.cloudinary.com/dkrpginfm/thumbnails/v1/image/upload/v1756943015/YWxleC1raW1fbG1lOXFm/drilldown" alt="Priya N." className="w-10 h-10 rounded-full mr-3 object-cover" />
+                                <div className="w-10 h-10 rounded-full mr-3 bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-lg">👶</div>
                                 <div>
                                     <p className="font-semibold">Priya N.</p>
                                     <p className="text-gray-400 text-sm">Topic: Auditing Basics</p>
@@ -163,7 +163,7 @@ export default function Community() {
 
                         <div className="flex items-center justify-between mt-4">
                             <div className="flex items-center">
-                                <img src="https://res-console.cloudinary.com/dkrpginfm/thumbnails/v1/image/upload/v1756943015/YWxleC1raW1fbG1lOXFm/drilldown" alt="Yuta S." className="w-10 h-10 rounded-full mr-3 object-cover" />
+                                <div className="w-10 h-10 rounded-full mr-3 bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-lg">👶</div>
                                 <div>
                                     <p className="font-semibold">Yuta S.</p>
                                     <p className="text-gray-400 text-sm">Topic: ZK Circuits</p>

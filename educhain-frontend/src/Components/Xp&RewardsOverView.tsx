@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import XPService, { UserXP, Achievement, NFT } from '../services/xpService';
 import { getPlatformStats } from '../services/blockchainService';
 import ConfigService, { AchievementConfig } from '../services/configService';
+import { courseStorage } from '../utils/courseStorage';
 
 
 
@@ -176,6 +177,7 @@ export default function XpAndRewards() {
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [adminAchievements, setAdminAchievements] = useState<AchievementConfig[]>([]);
+  const [localCourses, setLocalCourses] = useState<any[]>([]);
 
   useEffect(() => {
     loadXPData();
@@ -195,6 +197,11 @@ export default function XpAndRewards() {
       const achievements = ConfigService.getAchievements();
       console.log('Loaded admin achievements:', achievements);
       setAdminAchievements(achievements);
+
+      // Load local courses
+      const courses = await courseStorage.getAllCourses();
+      setLocalCourses(courses);
+      console.log('Loaded local courses:', courses);
 
       // Load blockchain stats
       await loadBlockchainStats();
@@ -285,7 +292,6 @@ export default function XpAndRewards() {
           <div className="bg-slate-800 p-6 rounded-xl shadow-xl">
             <div className="flex border-b border-slate-700 pb-2 mb-4">
               <TabButton isActive={activeTab === 'Overview'} onClick={handleTabClick('Overview')}>Overview</TabButton>
-              <TabButton isActive={activeTab === 'Achievements'} onClick={handleTabClick('Achievements')}>Achievements</TabButton>
               <TabButton isActive={activeTab === 'NFTs'} onClick={handleTabClick('NFTs')}>NFTs</TabButton>
             </div>
 
@@ -304,12 +310,8 @@ export default function XpAndRewards() {
                   </div>
                   <div className="bg-slate-700 p-4 rounded-lg text-center">
                     <h4 className="text-sm text-gray-400 mb-2">Total Courses</h4>
-                    {statsLoading ? (
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400 mx-auto"></div>
-                    ) : (
-                      <p className="text-2xl font-bold text-green-400">{blockchainStats?.totalCourses || 0}</p>
-                    )}
-                    <p className="text-xs text-gray-500">Published courses</p>
+                    <p className="text-2xl font-bold text-green-400">{localCourses.length}</p>
+                    <p className="text-xs text-gray-500">Created courses</p>
                   </div>
                   <div className="bg-slate-700 p-4 rounded-lg text-center">
                     <h4 className="text-sm text-gray-400 mb-2">XP Awarded</h4>
@@ -403,6 +405,7 @@ export default function XpAndRewards() {
                 </div>
               </div>
             )}
+
 
             {activeTab === 'NFTs' && (
               <div className="text-center py-8">

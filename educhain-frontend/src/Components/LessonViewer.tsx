@@ -158,13 +158,110 @@ const LessonViewer: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch the MDX file from the public folder
-      const response = await fetch(`/LessonContents/${lessonFile}`);
-      if (!response.ok) {
-        throw new Error('Failed to load lesson content');
+      // First try to fetch from local LessonContents folder
+      try {
+        const response = await fetch(`/LessonContents/${lessonFile}`);
+        if (response.ok) {
+          const text = await response.text();
+          setContent(text);
+          return;
+        }
+      } catch (localError) {
+        console.log('Local file not found, checking for external URL...');
       }
-      const text = await response.text();
-      setContent(text);
+
+      // If local file not found, check if there's an external URL in the lesson data
+      // For now, show a placeholder message
+      const lessonType = lessonFile.toLowerCase();
+      if (lessonType.includes('sui')) {
+        setContent(`# Introduction to Sui Move Programming
+
+This lesson covers the fundamentals of Sui Move programming language.
+
+## What is Sui Move?
+
+Sui Move is a smart contract programming language designed specifically for the Sui blockchain. It provides:
+
+- **Resource-oriented programming** for digital assets
+- **Type safety** to prevent common programming errors
+- **Object-based model** for flexible data structures
+
+## Key Features
+
+### 1. Objects and Ownership
+In Sui Move, digital assets are represented as objects with clear ownership rules.
+
+### 2. Move Semantics
+Move uses move semantics to ensure that values are not accidentally copied or lost.
+
+### 3. Type System
+Strong static typing prevents runtime errors and ensures contract safety.
+
+## Getting Started
+
+To start developing with Sui Move:
+
+1. Install Sui CLI
+2. Set up your development environment
+3. Create your first smart contract
+4. Deploy to Sui testnet
+
+*Note: This is placeholder content. Add your actual lesson content here.*`);
+      } else if (lessonType.includes('java')) {
+        setContent(`# Java Programming Fundamentals
+
+Welcome to Java programming! This comprehensive guide will take you from beginner to advanced concepts.
+
+## What is Java?
+
+Java is a high-level, object-oriented programming language developed by Sun Microsystems (now Oracle). It's known for:
+
+- **Platform independence** ("Write once, run anywhere")
+- **Strong type system** for reliability
+- **Rich standard library** for productivity
+- **Enterprise-grade** applications
+
+## Core Concepts
+
+### 1. Variables and Data Types
+Java supports various data types including primitives and objects.
+
+### 2. Control Structures
+Learn about loops, conditionals, and flow control.
+
+### 3. Object-Oriented Programming
+Master classes, objects, inheritance, and polymorphism.
+
+### 4. Exception Handling
+Understand how to handle errors gracefully.
+
+## Development Environment
+
+To start coding in Java:
+
+1. Install JDK (Java Development Kit)
+2. Set up an IDE (Eclipse, IntelliJ IDEA, or VS Code)
+3. Write your first "Hello World" program
+4. Learn about packages and imports
+
+*Note: This is placeholder content. Add your actual lesson content here.*`);
+      } else {
+        setContent(`# Lesson Content
+
+Welcome to this lesson! The content for this lesson is being prepared.
+
+## What You'll Learn
+
+- Key concepts and principles
+- Practical examples and exercises
+- Best practices and tips
+
+## Getting Started
+
+Please wait while we prepare the lesson materials for you.
+
+*Note: This is placeholder content. Add your actual lesson content here.*`);
+      }
     } catch (err) {
       console.error('Error loading lesson content:', err);
       setError('Failed to load lesson content');
@@ -329,13 +426,13 @@ const LessonViewer: React.FC = () => {
           {/* Back Button */}
           <div className="mb-6">
             <button
-              onClick={() => window.location.href = '/courses'}
+              onClick={() => window.location.href = '/user_dashboard'}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to Courses
+              Back to Dashboard
             </button>
           </div>
 
@@ -451,6 +548,7 @@ const LessonViewer: React.FC = () => {
           </div>
         </div>
       )}
+
     </>
   );
 };

@@ -28,10 +28,17 @@ const yourCoursesData = [
   { course: 'DAO Governance', progress: 1, xpEarned: 1050, status: 'Completed', action: 'View' },
 ];
 
-export default function CoursesContentOverView() {
+export default function CoursesContentOverView({ onPageChange }: { onPageChange?: (page: string) => void } = {}) {
   const suiClient = useSuiClient();
   const account = useCurrentAccount();
   const { user } = useAuth();
+
+  // Set active page when component mounts
+  React.useEffect(() => {
+    if (onPageChange) {
+      onPageChange('courses');
+    }
+  }, [onPageChange]);
   const [publishedCourses, setPublishedCourses] = useState<Course[]>([]);
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [courseProgress, setCourseProgress] = useState<{[key: string]: {status: 'not_started' | 'in_progress' | 'completed', currentLesson?: number}}>({});
@@ -171,9 +178,14 @@ export default function CoursesContentOverView() {
       return;
     }
 
-    // For now, direct enrollment for all courses
-    // Quiz will be moved to lesson component
-    await completeEnrollment(course);
+    // Show enrollment quiz for Sui Move courses
+    if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
+      setSelectedCourseForQuiz(course);
+      setShowEnrollmentQuiz(true);
+    } else {
+      // Direct enrollment for other courses
+      await completeEnrollment(course);
+    }
   };
 
   const handleQuizAnswer = (answerIndex: number) => {
@@ -260,12 +272,24 @@ export default function CoursesContentOverView() {
       setCourseProgress(updatedProgress);
       localStorage.setItem('courseProgress', JSON.stringify(updatedProgress));
 
-      // Navigate to lesson viewer with first lesson
-      // For now, we'll use the course's content URL or a default
-      window.location.href = `/lesson/sui-move.mdx`;
+      // Navigate to course content or default lesson
+      // Check if course has custom content, otherwise use default
+      if (course.title.toLowerCase().includes('database')) {
+        window.location.href = '/database-content.html';
+      } else if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
+        window.location.href = '/lesson/sui-move.mdx';
+      } else {
+        window.location.href = '/lesson/sui-move.mdx'; // Default fallback
+      }
     } else if (progress.status === 'in_progress') {
       // Continue from current lesson
-      window.location.href = `/lesson/sui-move.mdx`;
+      if (course.title.toLowerCase().includes('database')) {
+        window.location.href = '/database-content.html';
+      } else if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
+        window.location.href = '/lesson/sui-move.mdx';
+      } else {
+        window.location.href = '/lesson/sui-move.mdx'; // Default fallback
+      }
     }
   };
   return (

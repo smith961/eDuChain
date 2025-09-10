@@ -17,8 +17,7 @@ export default function WalletAuth() {
     try {
       setIsConnecting(true);
 
-      // For now, we'll do a simple authentication
-      // In a real app, you might want to sign a message for verification
+     
       await login(currentAccount.address);
 
     } catch (error) {
