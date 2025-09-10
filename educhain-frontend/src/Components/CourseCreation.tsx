@@ -25,10 +25,6 @@ const CourseCreationForm: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("create course");
   const [courses, setCourses] = useState<Course[]>([]);
-<<<<<<< HEAD
-  const [availableLesson, setAvailableLessons] = useState(['']);
-=======
->>>>>>> bde9bd1fe67d48e65eb187d75b43a42cce21c84c
   const [showLessonModal, setShowLessonModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [availableLessons, setAvailableLessons] = useState<string[]>([]);
@@ -39,12 +35,6 @@ const CourseCreationForm: React.FC = () => {
     duration: 0,
     order_index: 0,
   });
-<<<<<<< HEAD
-  
-
-  
-=======
->>>>>>> bde9bd1fe67d48e65eb187d75b43a42cce21c84c
 
   const categories = [
     "Programming",
