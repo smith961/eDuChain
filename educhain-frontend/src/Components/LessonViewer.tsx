@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useCurrentAccount } from '@mysten/dapp-kit';
 
 const LessonViewer: React.FC = () => {
   const { lessonId } = useParams<{ lessonId: string }>();
-  const account = useCurrentAccount();
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -144,8 +142,14 @@ const LessonViewer: React.FC = () => {
   const checkEnrollmentStatus = () => {
     // Check if user has already passed the enrollment quiz for this course type
     const lessonType = lessonId?.toLowerCase() || '';
-    const quizPassedKey = `quiz_passed_${lessonType}`;
 
+    // Skip quiz for external URLs (http/https)
+    if (lessonType.startsWith('http://') || lessonType.startsWith('https://')) {
+      console.log('Skipping quiz for external URL:', lessonType);
+      return;
+    }
+
+    const quizPassedKey = `quiz_passed_${lessonType}`;
     const hasPassedQuiz = localStorage.getItem(quizPassedKey) === 'true';
 
     if (!hasPassedQuiz && (lessonType.includes('sui') || lessonType.includes('java'))) {
@@ -157,6 +161,22 @@ const LessonViewer: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+
+      // Check if lessonFile is an external URL (starts with http/https)
+      if (lessonFile.startsWith('http://') || lessonFile.startsWith('https://')) {
+        console.log('Loading external URL:', lessonFile);
+        // For external URLs, we'll embed them in an iframe or provide a link
+        setContent(`# External Lesson Content
+
+This lesson links to external content. Click the link below to access the material:
+
+## [Open Lesson Content](${lessonFile})
+
+**URL:** ${lessonFile}
+
+*Note: This content is hosted externally. Please ensure you have a stable internet connection to access it.*`);
+        return;
+      }
 
       // First try to fetch from local LessonContents folder
       try {
@@ -272,6 +292,12 @@ Please wait while we prepare the lesson materials for you.
 
   const getCurrentQuizQuestions = () => {
     const lessonType = lessonId?.toLowerCase() || '';
+
+    // Return empty array for external URLs (no quiz needed)
+    if (lessonType.startsWith('http://') || lessonType.startsWith('https://')) {
+      return [];
+    }
+
     if (lessonType.includes('sui')) {
       return suiMoveEnrollmentQuestions;
     } else if (lessonType.includes('java')) {
@@ -285,6 +311,12 @@ Please wait while we prepare the lesson materials for you.
     setQuizAnswers(newAnswers);
 
     const questions = getCurrentQuizQuestions();
+    if (questions.length === 0) {
+      // No quiz questions for external URLs
+      setShowQuiz(false);
+      return;
+    }
+
     if (currentQuizQuestion < questions.length - 1) {
       setCurrentQuizQuestion(currentQuizQuestion + 1);
     } else {
@@ -445,7 +477,7 @@ Please wait while we prepare the lesson materials for you.
       </div>
 
       {/* Enrollment Quiz Modal */}
-      {showQuiz && (
+      {showQuiz && getCurrentQuizQuestions().length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">

@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
-import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useState } from 'react';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function WalletAuth() {
   const currentAccount = useCurrentAccount();
-  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
   const { user, login, isLoading } = useAuth();
   const [isConnecting, setIsConnecting] = useState(false);
 

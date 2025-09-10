@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import TopNav from "./TopNav"
 import Sidebar from "./SideBar"
@@ -7,30 +5,13 @@ import { DashboardContent } from "./DashBoard-Content"
 import { LearningPathContent } from "./LearningPathContent"
 import ProfileDetailsOverView from "./ProfileDetailsOverView"
 import CoursesContentOverView from "./CoursesContentOverView"
-import LessonViewer from "./LessonViewer"
 import Community from "./Community"
 import XpAndRewards from "./Xp&RewardsOverView"
 import SecurityOverView from "./SecurityOverView"
 import { useCurrentAccount } from "@mysten/dapp-kit"
 import MentorContentOverView from "./MentorOverView"
 import AdminPanel from "./AdminPanel"
-function MentorContent() {
-  return (
-    <div className="flex-1 p-6 bg-slate-950 text-white">
-      <h1 className="text-2xl font-bold mb-4">Mentor Dashboard</h1>
-      <p className="text-gray-400">Mentor content coming soon...</p>
-    </div>
-  )
-}
 
-function AdminContent() {
-  return (
-    <div className="flex-1 p-6 bg-slate-950 text-white">
-      <h1 className="text-2xl font-bold mb-4">Admin Dashboard</h1>
-      <p className="text-gray-400">Admin content coming soon...</p>
-    </div>
-  )
-}
 
 function AnalyticsContent() {
   const [timeRange, setTimeRange] = useState("week")
@@ -336,9 +317,6 @@ function LessonsContent() {
 export default function MainDashboard() {
   const currentAccount = useCurrentAccount();
   const [activePage, setActivePage] = useState("dashboard")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("")
-  const [sortBy, setSortBy] = useState("newest")
 
 
   const renderContent = () => {

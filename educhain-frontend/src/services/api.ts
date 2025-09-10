@@ -166,7 +166,7 @@ class FrontendAuthService {
     return quizzes;
   }
 
-  static submitQuiz(walletAddress: string, quizId: string, answers: any[]) {
+  static submitQuiz(_walletAddress: string, _quizId: string, _answers: any[]) {
     // This is handled by QuizService now
     // Just return a mock response for compatibility
     return {

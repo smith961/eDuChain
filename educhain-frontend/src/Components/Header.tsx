@@ -36,7 +36,7 @@ export function Header({ activeTab, onTabChange }: HeaderProps) {
                 🎨 Create Course
               </button>
               <button
-                onClick={() => onTabChange("View Courses")}
+                onClick={() => onTabChange("view courses")}
                 className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
                   activeTab === "view courses"
                     ? "bg-black text-white"

@@ -1,10 +1,10 @@
 
 
 import React, { useState, useEffect } from "react";
-import { useSuiClient, useCurrentAccount } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { courseStorage } from "../utils/courseStorage";
 import { useAuth } from "../contexts/AuthContext";
+import { getLessonsForCourse } from "../services/blockchainService";
 
 interface Course {
   id: string;
@@ -21,15 +21,8 @@ const totalEnrolledCourses = 8;
 const inProgressCourses = 4;
 const completedCourses = 6;
 
-const yourCoursesData = [
-  { course: 'Solidity Basics', progress: 620, xpEarned: 180, status: 'In Progress', action: 'Continue' },
-  { course: 'DeFi Risk Management', progress: 180, xpEarned: 180, status: 'In Progress', action: 'Continue' },
-  { course: 'NFT Economics', progress: 790, xpEarned: 180, status: 'Almost Done', action: 'Resume' },
-  { course: 'DAO Governance', progress: 1, xpEarned: 1050, status: 'Completed', action: 'View' },
-];
 
 export default function CoursesContentOverView({ onPageChange }: { onPageChange?: (page: string) => void } = {}) {
-  const suiClient = useSuiClient();
   const account = useCurrentAccount();
   const { user } = useAuth();
 
@@ -263,31 +256,150 @@ export default function CoursesContentOverView({ onPageChange }: { onPageChange?
     }
   };
 
-  const handleCourseAction = (course: Course) => {
+  const handleCourseAction = async (course: Course) => {
+    console.log('🚀 handleCourseAction called for course:', course.title, 'ID:', course.objectId);
+
     const progress = courseProgress[course.id];
+    console.log('📊 Current progress:', progress);
+
     if (!progress || progress.status === 'not_started') {
+      console.log('🎯 Starting new course...');
+
       // Start the course - navigate to first lesson
       const updatedProgress = { ...courseProgress };
       updatedProgress[course.id] = { status: 'in_progress', currentLesson: 0 };
       setCourseProgress(updatedProgress);
       localStorage.setItem('courseProgress', JSON.stringify(updatedProgress));
 
-      // Navigate to course content or default lesson
-      // Check if course has custom content, otherwise use default
+      // Try to get lessons from blockchain first
+      try {
+        console.log('🔍 Fetching lessons for course:', course.objectId);
+        const lessons = await getLessonsForCourse(course.objectId);
+        console.log('📚 Retrieved lessons:', lessons);
+
+        if (lessons.length > 0) {
+          // Navigate to the first lesson's content URL
+          const firstLesson = lessons[0];
+          console.log('🎯 First lesson:', firstLesson);
+          console.log('🌐 Navigating to:', firstLesson.content_url);
+
+          const targetUrl = firstLesson.content_url.startsWith('http')
+            ? firstLesson.content_url
+            : `/lesson/${firstLesson.content_url}`;
+
+          console.log('📍 Final navigation URL:', targetUrl);
+          window.location.href = targetUrl;
+          return;
+        } else {
+          console.log('⚠️ No lessons found in blockchain, using fallback');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching lessons from blockchain:', error);
+      }
+
+      // Fallback to hardcoded navigation if blockchain lessons not found
+      console.log('🔄 Using fallback navigation for course:', course.title);
+      console.log('📋 Course details:', {
+        title: course.title,
+        objectId: course.objectId,
+        id: course.id
+      });
+
+      // Check localStorage directly for debugging
+      const storedLessons = localStorage.getItem(`course_lessons_${course.objectId}`);
+      console.log('🔍 Direct localStorage check:', storedLessons);
+
       if (course.title.toLowerCase().includes('database')) {
         window.location.href = '/database-content.html';
       } else if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
         window.location.href = '/lesson/sui-move.mdx';
       } else {
+        // For non-Sui courses, try to find any stored lessons
+        if (storedLessons) {
+          try {
+            const lessons = JSON.parse(storedLessons);
+            if (lessons.length > 0) {
+              console.log('🎯 Found stored lessons in fallback:', lessons);
+              const firstLesson = lessons[0];
+              const targetUrl = firstLesson.content_url.startsWith('http')
+                ? firstLesson.content_url
+                : `/lesson/${firstLesson.content_url}`;
+              console.log('📍 Using stored lesson URL:', targetUrl);
+              window.location.href = targetUrl;
+              return;
+            }
+          } catch (error) {
+            console.error('❌ Error parsing stored lessons:', error);
+          }
+        }
         window.location.href = '/lesson/sui-move.mdx'; // Default fallback
       }
     } else if (progress.status === 'in_progress') {
-      // Continue from current lesson
+      console.log('▶️ Continuing course from lesson:', progress.currentLesson);
+
+      // Continue from current lesson - same logic as above
+      try {
+        console.log('🔍 Fetching lessons for course (continue):', course.objectId);
+        const lessons = await getLessonsForCourse(course.objectId);
+        console.log('📚 Retrieved lessons (continue):', lessons);
+
+        if (lessons.length > 0) {
+          // Navigate to the current lesson or first lesson
+          const currentLessonIndex = progress.currentLesson || 0;
+          const currentLesson = lessons[currentLessonIndex] || lessons[0];
+          console.log('🎯 Current lesson:', currentLesson);
+          console.log('🌐 Navigating to:', currentLesson.content_url);
+
+          const targetUrl = currentLesson.content_url.startsWith('http')
+            ? currentLesson.content_url
+            : `/lesson/${currentLesson.content_url}`;
+
+          console.log('📍 Final navigation URL:', targetUrl);
+          window.location.href = targetUrl;
+          return;
+        } else {
+          console.log('⚠️ No lessons found in blockchain, using fallback');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching lessons from blockchain (continue):', error);
+      }
+
+      // Fallback navigation
+      console.log('🔄 Using fallback navigation for course (continue):', course.title);
+      console.log('📋 Course details (continue):', {
+        title: course.title,
+        objectId: course.objectId,
+        id: course.id
+      });
+
+      // Check localStorage directly for debugging
+      const storedLessons = localStorage.getItem(`course_lessons_${course.objectId}`);
+      console.log('🔍 Direct localStorage check (continue):', storedLessons);
+
       if (course.title.toLowerCase().includes('database')) {
         window.location.href = '/database-content.html';
       } else if (course.title.toLowerCase().includes('sui') || course.title.toLowerCase().includes('move')) {
         window.location.href = '/lesson/sui-move.mdx';
       } else {
+        // For non-Sui courses, try to find any stored lessons
+        if (storedLessons) {
+          try {
+            const lessons = JSON.parse(storedLessons);
+            if (lessons.length > 0) {
+              console.log('🎯 Found stored lessons in fallback (continue):', lessons);
+              const currentLessonIndex = progress.currentLesson || 0;
+              const currentLesson = lessons[currentLessonIndex] || lessons[0];
+              const targetUrl = currentLesson.content_url.startsWith('http')
+                ? currentLesson.content_url
+                : `/lesson/${currentLesson.content_url}`;
+              console.log('📍 Using stored lesson URL (continue):', targetUrl);
+              window.location.href = targetUrl;
+              return;
+            }
+          } catch (error) {
+            console.error('❌ Error parsing stored lessons (continue):', error);
+          }
+        }
         window.location.href = '/lesson/sui-move.mdx'; // Default fallback
       }
     }
@@ -389,6 +501,28 @@ export default function CoursesContentOverView({ onPageChange }: { onPageChange?
                   className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
                 >
                   Try Again
+                </button>
+                <button
+                  onClick={() => {
+                    console.log("🔍 Checking all course lessons in localStorage...");
+                    const keys = Object.keys(localStorage).filter(key => key.startsWith('course_lessons_'));
+                    console.log("📋 Found lesson keys:", keys);
+                    keys.forEach(key => {
+                      const lessons = JSON.parse(localStorage.getItem(key) || '[]');
+                      console.log(`📚 ${key}:`, lessons);
+                    });
+                    alert(`Found ${keys.length} course lesson entries. Check console for details.`);
+
+                    // Test localStorage functionality
+                    const testKey = 'test_lesson_storage';
+                    localStorage.setItem(testKey, JSON.stringify({test: 'working'}));
+                    const testResult = localStorage.getItem(testKey);
+                    console.log("🧪 localStorage test:", testResult);
+                    localStorage.removeItem(testKey);
+                  }}
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium ml-2"
+                >
+                  Debug Lessons
                 </button>
               </div>
             ) : publishedCourses.length === 0 ? (

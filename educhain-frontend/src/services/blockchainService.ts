@@ -1,4 +1,4 @@
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { SuiClient, getFullnodeUrl} from '@mysten/sui/client';
 import { Transaction } from '@mysten/sui/transactions';
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 
@@ -79,6 +79,7 @@ export const createCourseTransaction = (
   });
 
   tx.moveCall({
+    // cspell:disable-next-line
     target: `${packageId}::educhain::create_course`,
     arguments: [
       tx.object(registryId),
@@ -108,6 +109,7 @@ export const addLessonTransaction = (
   const packageId = getPackageId();
 
   tx.moveCall({
+    // cspell:disable-next-line
     target: `${packageId}::educhain::add_lesson`,
     arguments: [
       tx.object(courseId),
@@ -128,6 +130,7 @@ export const publishCourseTransaction = (courseId: string): Transaction => {
   const packageId = getPackageId();
 
   tx.moveCall({
+    // cspell:disable-next-line
     target: `${packageId}::educhain::publish_course`,
     arguments: [
       tx.object(courseId),
@@ -149,7 +152,7 @@ export const getTransactionDetails = async (digest: string) => {
 };
 
 // Helper function to get user profile from blockchain
-export const getUserProfile = async (userAddress: string) => {
+export const getUserProfile = async (_userAddress: string) => {
   try {
     // This would need to be implemented based on how profiles are stored
     // For now, return mock data structure
@@ -174,7 +177,7 @@ export const getUserProfile = async (userAddress: string) => {
 };
 
 // Helper function to update user profile on blockchain
-export const updateUserProfile = async (updates: { username?: string; email?: string }) => {
+export const updateUserProfile = async (_updates: { username?: string; email?: string }) => {
   // This would create a transaction to update the profile on blockchain
   // For now, return a mock transaction
   const mockTx = {
@@ -185,7 +188,7 @@ export const updateUserProfile = async (updates: { username?: string; email?: st
 };
 
 // Helper function to get user achievements from blockchain
-export const getUserAchievements = async (userAddress: string) => {
+export const getUserAchievements = async (_userAddress: string) => {
   try {
     // Mock achievements data
     const mockAchievements = [
@@ -231,9 +234,9 @@ export const getUserAchievements = async (userAddress: string) => {
 };
 
 // Helper function to get user NFTs from blockchain
-export const getUserNFTs = async (userAddress: string) => {
+export const getUserNFTs = async (_userAddress: string) => {
   try {
-    // Mock NFTs data
+
     const mockNFTs = [
       {
         id: 'nft_1',
@@ -243,6 +246,7 @@ export const getUserNFTs = async (userAddress: string) => {
         achievement: 'Course Completion',
         rarity: 'rare',
         mintedAt: Date.now() - 4 * 24 * 60 * 60 * 1000,
+        // cspell:disable-next-line
         contractAddress: '0x1::educhain::CompletionNFT',
         tokenId: 'token_001',
       },
@@ -254,6 +258,7 @@ export const getUserNFTs = async (userAddress: string) => {
         achievement: 'Quiz Master',
         rarity: 'epic',
         mintedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+        // cspell:disable-next-line
         contractAddress: '0x1::educhain::CompletionNFT',
         tokenId: 'token_002',
       },
@@ -277,6 +282,7 @@ export const getPlatformStats = async (): Promise<{
   try {
     const tx = new Transaction();
     tx.moveCall({
+      // cspell:disable-next-line
       target: `${packageId}::educhain::get_platform_stats`,
       arguments: [tx.object(registryId)],
     });
@@ -340,5 +346,73 @@ export const getCourseFromBlockchain = async (courseId: string) => {
   } catch (error) {
     console.error('Error fetching course from blockchain:', error);
     return null;
+  }
+};
+
+// Helper function to get lessons for a course from blockchain
+export const getLessonsForCourse = async (courseId: string) => {
+  try {
+    console.log('🔍 Searching for lessons for course:', courseId);
+
+    // First, try to get lessons directly from course object (if stored there)
+    try {
+      const courseObject = await suiClient.getObject({
+        id: courseId,
+        options: {
+          showContent: true,
+          showType: true,
+        },
+      });
+
+      if (courseObject.data?.content?.dataType === 'moveObject') {
+        const fields = courseObject.data.content.fields as any;
+        console.log('📊 Course object fields:', fields);
+
+        // Check if lessons exist in the course object
+        if (fields.lessons && Array.isArray(fields.lessons)) {
+          console.log('✅ Found lessons in course object:', fields.lessons);
+          return fields.lessons.map((lesson: any) => ({
+            id: lesson.id || `${courseId}_lesson_${lesson.order_index}`,
+            title: lesson.title,
+            content_type: lesson.content_type,
+            content_url: lesson.content_url,
+            duration: Number(lesson.duration),
+            order_index: Number(lesson.order_index),
+          }));
+        }
+      }
+    } catch (courseError) {
+      console.log('⚠️ Could not fetch course object directly:', courseError);
+    }
+
+    // If lessons not found in course object, try to query for lesson objects
+    // This is a fallback for when lessons are stored as separate objects
+    console.log('🔄 Trying to query for lesson objects...');
+
+    // Get lessons from localStorage (stored when lessons are created)
+    const storedLessons = JSON.parse(localStorage.getItem(`course_lessons_${courseId}`) || '[]');
+    console.log('📋 Stored lessons from localStorage:', storedLessons);
+
+    if (storedLessons.length > 0) {
+      // Format the lessons to match the expected structure
+      const formattedLessons = storedLessons.map((lesson: any) => ({
+        id: lesson.id,
+        title: lesson.title,
+        content_type: lesson.content_type,
+        content_url: lesson.content_url,
+        duration: Number(lesson.duration),
+        order_index: Number(lesson.order_index),
+      }));
+
+      console.log('✅ Formatted lessons:', formattedLessons);
+      return formattedLessons;
+    }
+
+    // If no lessons found, return empty array
+    console.log('❌ No lessons found for course:', courseId);
+    return [];
+  } catch (error) {
+    console.error('❌ Error fetching lessons for course:', error);
+    return [];
   }
 };

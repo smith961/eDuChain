@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+// cspell:disable-next-line
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Course, suiClient, createCourseTransaction, addLessonTransaction, publishCourseTransaction } from "../services/blockchainService";
 import { Header } from "./Header";
@@ -7,7 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { courseStorage } from "../utils/courseStorage";
 import FormInput from "./FormInput";
 
-// Simplified component using blockchain service
+
 
 const CourseCreationForm: React.FC = () => {
     const account = useCurrentAccount();
@@ -83,9 +84,22 @@ const CourseCreationForm: React.FC = () => {
         [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
       };
 
-      // If lesson content is selected, automatically set the content URL
-      if (name === "selected_content" && value) {
-        updatedForm.content_url = `/lesson/${value}`;
+      // Handle content URL logic
+      if (name === "selected_content") {
+        if (value) {
+          // User selected a predefined lesson - set URL to lesson path
+          updatedForm.content_url = `/lesson/${value}`;
+          console.log("📝 Selected predefined lesson:", value, "URL set to:", updatedForm.content_url);
+        } else {
+          // User cleared the selection - don't change custom URL
+          console.log("📝 Cleared lesson selection, keeping current URL:", prev.content_url);
+        }
+      } else if (name === "content_url") {
+        // User manually entered a URL - clear the predefined selection if it was set
+        if (value && value !== prev.content_url) {
+          updatedForm.selected_content = '';
+          console.log("📝 User entered custom URL:", value, "cleared predefined selection");
+        }
       }
 
       return updatedForm;
@@ -103,7 +117,7 @@ const CourseCreationForm: React.FC = () => {
       return;
     }
     if (!isValidSuiAddress(formData.instructor)) {
-      alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters)");
+      alert("Please enter a valid Sui wallet address (0x followed by 64 hex characters). Example: 0x1234567890abcdef...");
       return;
     }
 
@@ -143,6 +157,7 @@ const CourseCreationForm: React.FC = () => {
       // Extract created course ID from objectChanges
       const objectChanges = txDetails.objectChanges || [];
       const createdCourse = objectChanges.find((change: any) =>
+        // cspell:disable-next-line
         change.type === 'created' && change.objectType?.includes('::educhain::Course')
       );
       if (createdCourse) {
@@ -169,14 +184,20 @@ const CourseCreationForm: React.FC = () => {
       }
 
       alert("🎉 Course created successfully on-chain!");
+      console.log("🔄 Switching to view courses tab...");
+      setActiveTab("view courses");
+
+      // Fetch courses immediately after creation
+      setTimeout(() => {
+        console.log("🔄 Fetching courses after creation...");
+        fetchCourses();
+      }, 1000);
     } catch (err) {
       console.error("❌ Transaction failed:", err);
       alert("Failed to create course. Check console for details.");
     } finally {
       setLoading(false);
     }
-
-    setActiveTab("view courses");
   };
 
   const handleAddLesson = async (e: React.FormEvent) => {
@@ -186,6 +207,25 @@ const CourseCreationForm: React.FC = () => {
       alert("Please connect wallet and select a course");
       return;
     }
+
+    // Validate that either predefined lesson OR custom URL is provided
+    if (!lessonForm.selected_content && !lessonForm.content_url) {
+      alert("Please either select a predefined lesson OR enter a custom content URL");
+      return;
+    }
+
+    if (!lessonForm.content_url) {
+      alert("Content URL is required. Please select a predefined lesson or enter a custom URL.");
+      return;
+    }
+
+    console.log("📝 Adding lesson with data:", {
+      title: lessonForm.title,
+      content_url: lessonForm.content_url,
+      content_type: lessonForm.content_type,
+      selected_content: lessonForm.selected_content,
+      courseId: selectedCourse.objectId
+    });
 
     setLoading(true);
 
@@ -202,6 +242,34 @@ const CourseCreationForm: React.FC = () => {
       const result = await signAndExecute({ transaction: tx });
 
       console.log("✅ Add lesson success:", result);
+
+      // Store lesson data locally for retrieval
+      const lessonData = {
+        id: `${selectedCourse.objectId}_lesson_${lessonForm.order_index}`,
+        title: lessonForm.title,
+        content_type: lessonForm.content_type,
+        content_url: lessonForm.content_url,
+        duration: lessonForm.duration,
+        order_index: lessonForm.order_index,
+        courseId: selectedCourse.objectId,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Store in localStorage for the specific course
+      const storageKey = `course_lessons_${selectedCourse.objectId}`;
+      const existingLessons = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedLessons = [...existingLessons, lessonData];
+      localStorage.setItem(storageKey, JSON.stringify(updatedLessons));
+
+      console.log("💾 Lesson stored locally:", {
+        storageKey,
+        lessonData,
+        totalLessons: updatedLessons.length
+      });
+
+      // Verify storage
+      const verifyLessons = localStorage.getItem(storageKey);
+      console.log("✅ Verification - stored lessons:", verifyLessons);
       alert("Lesson added successfully!");
 
       // Reset form and close modal
@@ -233,11 +301,20 @@ const CourseCreationForm: React.FC = () => {
     }
 
     console.log("🚀 Starting course publish process for:", course.title);
+    console.log("📋 Course details:", {
+      id: course.id,
+      objectId: course.objectId,
+      title: course.title
+    });
+
+    // Check if lessons exist before publishing
+    const lessonKey = `course_lessons_${course.objectId}`;
+    const existingLessons = localStorage.getItem(lessonKey);
+    console.log("📚 Lessons for course:", existingLessons);
+
     setLoading(true);
 
     try {
-
-
       console.log("📦 Publishing course on blockchain...");
       const tx = publishCourseTransaction(course.objectId);
 
@@ -249,6 +326,13 @@ const CourseCreationForm: React.FC = () => {
       try {
         await courseStorage.publishCourse(course.objectId);
         console.log("✅ IndexedDB publish status updated successfully");
+
+        // Transfer lesson data to published course
+        const draftLessons = JSON.parse(localStorage.getItem(`course_lessons_${course.objectId}`) || '[]');
+        if (draftLessons.length > 0) {
+          // Keep the same localStorage key since the course ID doesn't change
+          console.log("📚 Lessons already associated with course:", draftLessons.length, "lessons");
+        }
 
         // Verify the update
         const publishedCourses = await courseStorage.getPublishedCourses();
@@ -274,10 +358,14 @@ const CourseCreationForm: React.FC = () => {
 
   const fetchCourses = async () => {
     console.log("🚀 fetchCourses called");
-    if (!user && !account) {
-      console.log("❌ No user or wallet connected, returning early");
-      return;
-    }
+    console.log("🔍 User state:", user);
+    console.log("🔍 Account state:", account);
+
+    // Allow fetching courses even without wallet connection for debugging
+    // if (!user && !account) {
+    //   console.log("❌ No user or wallet connected, returning early");
+    //   return;
+    // }
 
     setLoading(true);
     try {
@@ -300,6 +388,7 @@ const CourseCreationForm: React.FC = () => {
 
       console.log("✅ Converted course data:", courseData);
       setCourses(courseData);
+      console.log("📊 Courses state updated, current courses:", courseData.length);
     } catch (error) {
       console.error("❌ Error fetching courses:", error);
       alert("Failed to fetch courses. Check console for details.");
@@ -317,12 +406,8 @@ const CourseCreationForm: React.FC = () => {
   useEffect(() => {
     console.log("🔍 useEffect triggered - activeTab:", activeTab, "user:", user, "account:", account);
     if (activeTab === "view courses") {
-      if (user || account) {
-        console.log("✅ User authenticated or wallet connected, fetching courses...");
-        fetchCourses();
-      } else {
-        console.log("⚠️ User not authenticated and no wallet connected, skipping course fetch");
-      }
+      console.log("✅ Fetching courses for view courses tab...");
+      fetchCourses();
     }
   }, [activeTab, user, account]);
 
@@ -575,8 +660,12 @@ const CourseCreationForm: React.FC = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => (
-              <div key={course.id} className="bg-white border border-gray-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            {(() => {
+              console.log("🎯 Rendering courses grid, courses length:", courses.length);
+              return null;
+            })()}
+            {courses.map((course, index) => (
+              <div key={course.id || index} className="bg-white border border-gray-200 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{course.title}</h3>
                 <p className="text-gray-600 mb-4">{course.description}</p>
                 <div className="text-sm text-gray-500 space-y-1 mb-4">
@@ -588,6 +677,7 @@ const CourseCreationForm: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
+                      console.log('Add Lesson clicked for course:', course.title);
                       setSelectedCourse(course);
                       setShowLessonModal(true);
                     }}
@@ -596,7 +686,10 @@ const CourseCreationForm: React.FC = () => {
                     Add Lesson
                   </button>
                   <button
-                    onClick={() => handlePublishCourse(course)}
+                    onClick={() => {
+                      console.log('Publish clicked for course:', course.title);
+                      handlePublishCourse(course);
+                    }}
                     disabled={loading}
                     className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50"
                   >
@@ -645,30 +738,35 @@ const CourseCreationForm: React.FC = () => {
         </FormInput>
 
         <FormInput
-          label="Lesson Content"
+          label="Predefined Lesson (Optional)"
           id="selected_content"
           name="selected_content"
           type="select"
           value={lessonForm.selected_content}
           onChange={handleLessonInputChange}
-          required
         >
-          <option value="" disabled>Select lesson content</option>
+          <option value="">Choose from available lessons...</option>
           {availableLessons.map((lesson) => (
             <option key={lesson} value={lesson}>
               {lesson.replace('.mdx', '').replace('-', ' ').toUpperCase()}
             </option>
           ))}
         </FormInput>
+        <div className="text-xs text-gray-500 mb-4">
+          💡 Choose a predefined lesson OR enter your own custom URL below
+        </div>
 
         <FormInput
-          label="Content URL"
+          label="Custom Content URL"
           id="content_url"
           name="content_url"
           value={lessonForm.content_url}
           onChange={handleLessonInputChange}
-          placeholder="Or enter custom URL"
+          placeholder="https://example.com/your-lesson or /local/path"
         />
+        <div className="text-sm text-gray-500 mt-2">
+          🌐 Final URL: {lessonForm.content_url || 'None - select predefined lesson above'}
+        </div>
 
         <FormInput
           label="Duration (minutes)"

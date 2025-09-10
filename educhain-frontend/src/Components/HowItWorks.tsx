@@ -41,7 +41,7 @@ const HowItWork = () => {
         </div>
 
         <div className="space-y-8">
-          {steps.map((step, index) => (
+          {steps.map((step, _index) => (
             <div key={step.number} className="relative">
               <div className="bg-slate-900/50 rounded-2xl p-8 border border-slate-800 hover:border-slate-700 transition-all duration-300">
                 <div className="flex gap-6 items-start">

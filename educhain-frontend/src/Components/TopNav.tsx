@@ -9,7 +9,7 @@ export default function TopNav() {
   return (
     <div className="w-full h-16 bg-slate-900 shadow-md flex items-center justify-between px-6 border-b border-slate-700">
 
-      <Link 
+      <Link
         to= "/"
         className="flex items-center space-x-2">
         <FaBook className="text-2xl text-white" />

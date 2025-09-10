@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { frontendAuthService, UserProfile } from '../services/api';
+import { frontendAuthService } from '../services/api';
 import XPService from '../services/xpService';
 
 interface User {
