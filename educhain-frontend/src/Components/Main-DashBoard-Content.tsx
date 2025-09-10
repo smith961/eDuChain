@@ -41,6 +41,14 @@ function LessonsContent() {
       difficulty: 'Beginner to Advanced',
       duration: '2-3 hours',
       file: 'sui-move.mdx'
+    },
+    {
+      id: 'java-basics',
+      title: 'Java Programming Fundamentals',
+      description: 'Learn the basics of Java programming from variables to object-oriented concepts',
+      difficulty: 'Beginner',
+      duration: '1-2 hours',
+      file: 'java-basics.mdx'
     }
   ];
 

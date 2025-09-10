@@ -329,7 +329,7 @@ const LessonViewer: React.FC = () => {
           {/* Back Button */}
           <div className="mb-6">
             <button
-              onClick={() => window.history.back()}
+              onClick={() => window.location.href = '/courses'}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

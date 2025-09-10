@@ -322,12 +322,30 @@ const CourseCreationForm: React.FC = () => {
 
   const loadAvailableLessons = async () => {
     try {
-      // For now, we'll hardcode the available lessons
-      // In a real app, you might fetch this from an API or scan the folder
-      const lessons = ['sui-move.mdx', 'java-basics.mdx'];
-      setAvailableLessons(lessons);
+      // Try to fetch available lesson files from the public folder
+      // This is a simple approach - in production you might want a more robust solution
+      const possibleLessons = ['sui-move.mdx', 'java-basics.mdx', 'react-basics.mdx', 'python-intro.mdx'];
+
+      const availableLessonsList: string[] = [];
+
+      for (const lesson of possibleLessons) {
+        try {
+          const response = await fetch(`/LessonContents/${lesson}`, { method: 'HEAD' });
+          if (response.ok) {
+            availableLessonsList.push(lesson);
+          }
+        } catch (error) {
+          // File doesn't exist, skip it
+          console.log(`Lesson file ${lesson} not found, skipping...`);
+        }
+      }
+
+      setAvailableLessons(availableLessonsList);
+      console.log('Available lessons loaded:', availableLessonsList);
     } catch (error) {
       console.error('Error loading available lessons:', error);
+      // Fallback to known lessons
+      setAvailableLessons(['sui-move.mdx', 'java-basics.mdx']);
     }
   };
   return (

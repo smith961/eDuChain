@@ -28,6 +28,7 @@ export interface Achievement {
   unlocked: boolean;
   unlockedAt?: number;
   rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+  category?: string;
   blockchainVerified: boolean;
 }
 
@@ -143,6 +144,7 @@ class XPService {
         xpReward: 25,
         unlocked: false,
         rarity: 'common',
+        category: 'social',
         blockchainVerified: true,
       },
       {
@@ -153,6 +155,7 @@ class XPService {
         xpReward: 50,
         unlocked: false,
         rarity: 'common',
+        category: 'learning',
         blockchainVerified: true,
       },
       {
@@ -163,6 +166,7 @@ class XPService {
         xpReward: 75,
         unlocked: false,
         rarity: 'common',
+        category: 'learning',
         blockchainVerified: true,
       },
       {
@@ -173,6 +177,7 @@ class XPService {
         xpReward: 200,
         unlocked: false,
         rarity: 'rare',
+        category: 'achievement',
         blockchainVerified: true,
       },
       {
@@ -183,6 +188,7 @@ class XPService {
         xpReward: 150,
         unlocked: false,
         rarity: 'rare',
+        category: 'social',
         blockchainVerified: true,
       },
       {
@@ -193,6 +199,7 @@ class XPService {
         xpReward: 300,
         unlocked: false,
         rarity: 'epic',
+        category: 'achievement',
         blockchainVerified: true,
       },
       {
@@ -203,6 +210,7 @@ class XPService {
         xpReward: 500,
         unlocked: false,
         rarity: 'epic',
+        category: 'learning',
         blockchainVerified: true,
       },
       {
@@ -213,6 +221,7 @@ class XPService {
         xpReward: 1000,
         unlocked: false,
         rarity: 'legendary',
+        category: 'learning',
         blockchainVerified: true,
       },
       {
@@ -223,6 +232,7 @@ class XPService {
         xpReward: 2000,
         unlocked: false,
         rarity: 'mythic',
+        category: 'learning',
         blockchainVerified: true,
       },
     ];

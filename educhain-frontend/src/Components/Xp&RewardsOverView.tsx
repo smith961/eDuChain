@@ -1,46 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import XPService, { UserXP, Achievement, NFT } from '../services/xpService';
+import { getPlatformStats } from '../services/blockchainService';
+import ConfigService, { AchievementConfig } from '../services/configService';
 
-// 1. Define Prop Interfaces for Reusable Button Components
-interface ButtonProps {
-  children: React.ReactNode; // Can be string, number, array, or other React elements
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void; // Explicitly define onClick as a function that takes a MouseEvent
-  className?: string; // className is optional
-}
 
-const PrimaryButton: React.FC<ButtonProps> = ({ children, onClick, className = '' }) => (
-  <button
-    onClick={onClick}
-    className={`bg-green-500 text-black font-semibold py-2 px-4 rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 ${className}`}
-  >
-    {children}
-  </button>
-);
 
-const SecondaryButton: React.FC<ButtonProps> = ({ children, onClick, className = '' }) => (
-  <button
-    onClick={onClick}
-    className={`bg-slate-700 text-white font-semibold py-2 px-4 rounded hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-75 ${className}`}
-  >
-    {children}
-  </button>
-);
-
-interface DetailButtonProps {
-  children?: string; // children is optional for DetailButton, defaults to 'Details'
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  className?: string;
-}
-
-const DetailButton: React.FC<DetailButtonProps> = ({ children = 'Details', onClick, className = '' }) => (
-  <button
-    onClick={onClick}
-    className={`text-green-500 hover:text-green-400 font-semibold text-sm ${className}`}
-  >
-    {children}
-  </button>
-);
-
+// Tab Button Component
 interface TabButtonProps {
   children: React.ReactNode;
   isActive: boolean;
@@ -60,83 +25,6 @@ const TabButton: React.FC<TabButtonProps> = ({ children, isActive, onClick }) =>
   </button>
 );
 
-// 2. Define Prop Interface for CredentialCard
-interface CredentialCardProps {
-  title: string;
-  status: string;
-  description: string;
-  id?: string; // id is optional as not all cards have it
-  onClickView: (event: React.MouseEvent<HTMLButtonElement>) => void;
-}
-
-const CredentialCard: React.FC<CredentialCardProps> = ({ title, status, description, id, onClickView }) => (
-  <div className="bg-slate-700 p-4 rounded-lg shadow-sm flex flex-col items-start text-white w-full">
-    <div className="flex justify-between items-center w-full mb-2">
-      <h3 className="font-semibold text-lg">{title}</h3>
-      <span className={`text-xs px-2 py-1 rounded-full ${status === 'Minted' ? 'bg-green-600 text-black' : 'bg-yellow-600 text-black'}`}>
-        {status}
-      </span>
-    </div>
-    <p className="text-gray-400 text-sm mb-2">{description}</p>
-    {id && <p className="text-gray-500 text-xs mb-3">ID: {id}</p>}
-    <SecondaryButton onClick={onClickView} className="w-full">View</SecondaryButton>
-  </div>
-);
-
-
-// Blockchain Verification Badge Component
-const BlockchainBadge: React.FC<{ verified: boolean; size?: 'sm' | 'md' | 'lg' }> = ({
-  verified,
-  size = 'md'
-}) => {
-  const sizeClasses = {
-    sm: 'text-xs px-2 py-1',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-2'
-  };
-
-  return (
-    <div className={`inline-flex items-center gap-1 rounded-full font-medium ${
-      verified
-        ? 'bg-green-100 text-green-800 border border-green-200'
-        : 'bg-gray-100 text-gray-600 border border-gray-200'
-    } ${sizeClasses[size]}`}>
-      {verified ? (
-        <>
-          <span className="text-green-600">⛓️</span>
-          <span>Blockchain Verified</span>
-        </>
-      ) : (
-        <>
-          <span className="text-gray-500">⏳</span>
-          <span>Pending Verification</span>
-        </>
-      )}
-    </div>
-  );
-};
-
-// XP Progress Bar Component
-const XPProgressBar: React.FC<{ currentXP: number; nextLevelXP: number; currentLevel: number }> = ({
-  currentXP,
-  nextLevelXP,
-  currentLevel
-}) => {
-  const progress = Math.min((currentXP / nextLevelXP) * 100, 100);
-
-  return (
-    <div className="bg-slate-700 rounded-full h-3 overflow-hidden">
-      <div
-        className="bg-gradient-to-r from-blue-500 to-purple-600 h-full transition-all duration-1000 ease-out"
-        style={{ width: `${progress}%` }}
-      />
-      <div className="text-center text-xs text-gray-300 mt-1">
-        Level {currentLevel}: {currentXP} / {nextLevelXP} XP
-      </div>
-    </div>
-  );
-};
-
 // Achievement Card Component
 const AchievementCard: React.FC<{ achievement: Achievement }> = ({ achievement }) => {
   const rarityColors = {
@@ -151,14 +39,16 @@ const AchievementCard: React.FC<{ achievement: Achievement }> = ({ achievement }
     <div className={`p-4 rounded-lg border-2 ${rarityColors[achievement.rarity]} ${
       achievement.unlocked ? 'opacity-100' : 'opacity-50'
     }`}>
-      <div className="flex items-center gap-3 mb-2">
-        <span className="text-2xl">{achievement.icon}</span>
-        <div className="flex-1">
+      <div className="mb-2">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-lg">{achievement.icon || '🏆'}</span>
           <h4 className="font-bold text-gray-900">{achievement.name}</h4>
-          <p className="text-sm text-gray-600">{achievement.description}</p>
         </div>
+        <p className="text-sm text-gray-600">{achievement.description}</p>
         {achievement.unlocked && (
-          <BlockchainBadge verified={achievement.blockchainVerified} size="sm" />
+          <div className="mt-2">
+            <BlockchainBadge verified={achievement.blockchainVerified} size="sm" />
+          </div>
         )}
       </div>
 
@@ -240,11 +130,52 @@ const NFTCard: React.FC<{ nft: NFT }> = ({ nft }) => {
   );
 };
 
+// Blockchain Verification Badge Component
+const BlockchainBadge: React.FC<{ verified: boolean; size?: 'sm' | 'md' | 'lg' }> = ({
+  verified,
+  size = 'md'
+}) => {
+  const sizeClasses = {
+    sm: 'text-xs px-2 py-1',
+    md: 'text-sm px-3 py-1',
+    lg: 'text-base px-4 py-2'
+  };
+
+  return (
+    <div className={`inline-flex items-center gap-1 rounded-full font-medium ${
+      verified
+        ? 'bg-green-100 text-green-800 border border-green-200'
+        : 'bg-gray-100 text-gray-600 border border-gray-200'
+    } ${sizeClasses[size]}`}>
+      {verified ? (
+        <>
+          <span className="text-green-600">⛓️</span>
+          <span>Blockchain Verified</span>
+        </>
+      ) : (
+        <>
+          <span className="text-gray-500">⏳</span>
+          <span>Pending Verification</span>
+        </>
+      )}
+    </div>
+  );
+};
+
+
+
+
 export default function XpAndRewards() {
   const [activeTab, setActiveTab] = useState('Overview');
   const [userXP, setUserXP] = useState<UserXP | null>(null);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [blockchainStats, setBlockchainStats] = useState<{
+    totalUsers: number;
+    totalCourses: number;
+    totalXpAwarded: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [adminAchievements, setAdminAchievements] = useState<AchievementConfig[]>([]);
 
   useEffect(() => {
     loadXPData();
@@ -257,10 +188,16 @@ export default function XpAndRewards() {
       await XPService.initializeDemoData('demo_user');
 
       const xpData = XPService.getUserXP('demo_user');
-      const leaderboardData = await XPService.getLeaderboard();
 
       setUserXP(xpData);
-      setLeaderboard(leaderboardData);
+
+      // Load admin achievements
+      const achievements = ConfigService.getAchievements();
+      console.log('Loaded admin achievements:', achievements);
+      setAdminAchievements(achievements);
+
+      // Load blockchain stats
+      await loadBlockchainStats();
     } catch (error) {
       console.error('Error loading XP data:', error);
     } finally {
@@ -268,49 +205,28 @@ export default function XpAndRewards() {
     }
   };
 
-  const awardTestXP = async (amount: number, reason: string) => {
-    if (!userXP) return;
-
+  const loadBlockchainStats = async () => {
     try {
-      const updatedXP = await XPService.awardXP('demo_user', amount, reason);
-      setUserXP(updatedXP);
+      setStatsLoading(true);
+      const stats = await getPlatformStats();
+      setBlockchainStats(stats);
     } catch (error) {
-      console.error('Error awarding XP:', error);
+      console.error('Error loading blockchain stats:', error);
+      // Set fallback values if blockchain call fails
+      setBlockchainStats({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalXpAwarded: 0,
+      });
+    } finally {
+      setStatsLoading(false);
     }
   };
+
 
   // Helper function for onClick handlers to avoid creating new functions in render for simplicity
   const handleTabClick = (tabName: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
     setActiveTab(tabName);
-  };
-
-  const handleDetailsClick = (source: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log(`Details clicked for: ${source}`);
-    // Implement navigation or modal display here
-  };
-
-  const handleClaimClick = (source: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log(`Claim clicked for: ${source}`);
-    // Implement claim logic here
-  };
-
-  const handleViewCredential = (credentialId: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log(`View credential: ${credentialId}`);
-    // Implement navigation to credential details page
-  };
-
-  const handlePreviewSmartContractSecurity = (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('Preview Smart Contract Security clicked');
-    // Implement navigation or modal for preview
-  };
-
-  const handleRedeemClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('Redeem clicked');
-    // Implement redeem logic
-  };
-
-  const handleTestXP = (amount: number, reason: string) => async () => {
-    await awardTestXP(amount, reason);
   };
 
 
@@ -340,12 +256,9 @@ export default function XpAndRewards() {
       {/* Blockchain Uniqueness Header */}
       <div className="mb-8">
         <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-2xl text-white mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-4xl">⛓️</div>
-            <div>
-              <h1 className="text-3xl font-bold">Blockchain Learning Rewards</h1>
-              <p className="text-purple-100">Your achievements are permanently recorded on Sui blockchain</p>
-            </div>
+          <div className="text-center mb-4">
+            <h1 className="text-3xl font-bold">Blockchain Learning Rewards</h1>
+            <p className="text-purple-100">Your achievements are permanently recorded on Sui blockchain</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex items-center gap-2">
@@ -378,67 +291,47 @@ export default function XpAndRewards() {
 
             {activeTab === 'Overview' && (
               <div className="space-y-6">
-                {/* XP Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div className="bg-slate-700 p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">Total XP</p>
-                    <p className="text-2xl font-bold text-green-400">{userXP.totalXP}</p>
-                    <BlockchainBadge verified={true} size="sm" />
+                {/* Blockchain Stats Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-700 p-4 rounded-lg text-center">
+                    <h4 className="text-sm text-gray-400 mb-2">Total Users</h4>
+                    {statsLoading ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400 mx-auto"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-blue-400">{blockchainStats?.totalUsers || 0}</p>
+                    )}
+                    <p className="text-xs text-gray-500">On Sui blockchain</p>
                   </div>
-                  <div className="bg-slate-700 p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">Current Level</p>
-                    <p className="text-2xl font-bold text-blue-400">{userXP.currentLevel}</p>
+                  <div className="bg-slate-700 p-4 rounded-lg text-center">
+                    <h4 className="text-sm text-gray-400 mb-2">Total Courses</h4>
+                    {statsLoading ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400 mx-auto"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-green-400">{blockchainStats?.totalCourses || 0}</p>
+                    )}
+                    <p className="text-xs text-gray-500">Published courses</p>
                   </div>
-                  <div className="bg-slate-700 p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">Available XP</p>
-                    <p className="text-2xl font-bold text-white">{userXP.availableXP}</p>
-                  </div>
-                  <div className="bg-slate-700 p-4 rounded-lg">
-                    <p className="text-gray-400 text-sm">NFTs Earned</p>
-                    <p className="text-2xl font-bold text-purple-400">{userXP.nfts.length}</p>
+                  <div className="bg-slate-700 p-4 rounded-lg text-center">
+                    <h4 className="text-sm text-gray-400 mb-2">XP Awarded</h4>
+                    {statsLoading ? (
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-400 mx-auto"></div>
+                    ) : (
+                      <p className="text-2xl font-bold text-purple-400">{blockchainStats?.totalXpAwarded || 0}</p>
+                    )}
+                    <p className="text-xs text-gray-500">Blockchain verified</p>
                   </div>
                 </div>
 
-                {/* XP Progress Bar */}
-                <div>
-                  <XPProgressBar
-                    currentXP={userXP.totalXP}
-                    nextLevelXP={userXP.nextLevelXP}
-                    currentLevel={userXP.currentLevel}
-                  />
-                </div>
-
-                {/* Recent XP Activity */}
-                <div>
-                  <h3 className="text-xl font-bold mb-4">Recent Blockchain Activity</h3>
-                  <div className="space-y-3">
-                    {userXP.transactions.slice(0, 5).map((transaction) => (
-                      <div key={transaction.id} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl">
-                            {transaction.type === 'lesson_completion' ? '📚' :
-                             transaction.type === 'quiz_completion' ? '🎯' :
-                             transaction.type === 'course_completion' ? '🎓' :
-                             transaction.type === 'daily_login' ? '🔥' :
-                             transaction.type === 'achievement' ? '🏆' : '⭐'}
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">{transaction.reason}</p>
-                            <p className="text-sm text-gray-400">
-                              {new Date(transaction.timestamp).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-green-400 font-bold">+{transaction.amount} XP</p>
-                          {transaction.txHash && (
-                            <p className="text-xs text-gray-500 font-mono">
-                              {transaction.txHash.slice(0, 8)}...
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                {/* NFT Badge Section */}
+                <div className="text-center">
+                  <div className="text-2xl mb-4">🎨</div>
+                  <h3 className="text-xl font-bold mb-4">NFT Achievement Badges</h3>
+                  <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-xl text-white">
+                    <p className="text-lg font-semibold mb-2">Blockchain-Verified Achievements</p>
+                    <p className="text-purple-100">Your NFT badges are permanently stored on Sui blockchain</p>
+                    <div className="mt-4">
+                      <BlockchainBadge verified={true} size="md" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -446,105 +339,90 @@ export default function XpAndRewards() {
 
             {activeTab === 'Achievements' && (
               <div>
-                <h3 className="text-xl font-bold mb-4">Achievement Gallery</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {userXP.achievements.map((achievement) => (
-                    <AchievementCard key={achievement.id} achievement={achievement} />
-                  ))}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🏆</span>
+                      <div>
+                        <h3 className="text-xl font-bold mb-2">Available Achievements</h3>
+                        <p className="text-gray-400">Achievements created in the admin panel</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const achievements = ConfigService.getAchievements();
+                        console.log('Refreshed admin achievements:', achievements);
+                        setAdminAchievements(achievements);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                {adminAchievements.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-4">🏆</div>
+                    <h3 className="text-xl font-bold mb-2">No Achievements Yet</h3>
+                    <p className="text-gray-400">Create achievements in the admin panel to see them here</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {adminAchievements.map((achievement) => (
+                      <AchievementCard
+                        key={achievement.id}
+                        achievement={{
+                          id: achievement.id,
+                          name: achievement.name,
+                          description: achievement.description,
+                          icon: achievement.icon || '🏆',
+                          xpReward: achievement.xpReward,
+                          rarity: achievement.rarity,
+                          category: achievement.category,
+                          unlocked: false, // This would be determined by user progress
+                          blockchainVerified: achievement.blockchainVerified,
+                          unlockedAt: undefined,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-6 p-4 bg-slate-700 rounded-lg">
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-lg">💡</span>
+                    How Achievements Work
+                  </h4>
+                  <ul className="text-sm text-gray-400 space-y-1">
+                    <li>• Achievements are created by admins in the admin panel</li>
+                    <li>• Each achievement has XP rewards and rarity levels</li>
+                    <li>• Blockchain-verified achievements are permanently recorded</li>
+                    <li>• Unlocked achievements can mint NFTs as proof</li>
+                  </ul>
                 </div>
               </div>
             )}
 
             {activeTab === 'NFTs' && (
-              <div>
-                <h3 className="text-xl font-bold mb-4">NFT Collection</h3>
-                {userXP.nfts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-6xl mb-4">🎨</div>
-                    <p className="text-gray-400">No NFTs earned yet</p>
-                    <p className="text-sm text-gray-500">Complete achievements to earn unique NFTs</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {userXP.nfts.map((nft) => (
-                      <NFTCard key={nft.id} nft={nft} />
-                    ))}
-                  </div>
-                )}
+              <div className="text-center py-8">
+                <div className="text-3xl mb-4">🎨</div>
+                <h3 className="text-xl font-bold mb-2">NFT Achievement Badges</h3>
+                <p className="text-gray-400 mb-4">Your blockchain-verified achievements</p>
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-4 rounded-lg text-white inline-block">
+                  <BlockchainBadge verified={true} size="md" />
+                </div>
               </div>
             )}
           </div>
 
         </div>
 
-        {/* Right Sidebar - Leaderboard & Testing Tools */}
+        {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Leaderboard */}
-          <div className="bg-slate-800 p-6 rounded-xl shadow-xl">
-            <h3 className="text-xl font-bold mb-4">🏆 Leaderboard</h3>
-            <div className="space-y-3">
-              {leaderboard.map((user, index) => (
-                <div key={user.userId} className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      index === 0 ? 'bg-yellow-500 text-black' :
-                      index === 1 ? 'bg-gray-400 text-black' :
-                      index === 2 ? 'bg-orange-600 text-white' :
-                      'bg-slate-600 text-white'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <div>
-                      <p className="font-medium text-white">{user.userId}</p>
-                      <p className="text-sm text-gray-400">Level {user.level}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-green-400 font-bold">{user.totalXP} XP</p>
-                    <p className="text-sm text-gray-400">{user.achievements} achievements</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* XP Testing Tools (for demo purposes) */}
-          <div className="bg-slate-800 p-6 rounded-xl shadow-xl">
-            <h3 className="text-xl font-bold mb-4">🧪 XP Testing Tools</h3>
-            <div className="space-y-3">
-              <button
-                onClick={handleTestXP(50, 'Test lesson completion')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium"
-              >
-                +50 XP (Lesson)
-              </button>
-              <button
-                onClick={handleTestXP(100, 'Test quiz completion')}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-medium"
-              >
-                +100 XP (Quiz)
-              </button>
-              <button
-                onClick={handleTestXP(200, 'Test course completion')}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-medium"
-              >
-                +200 XP (Course)
-              </button>
-              <button
-                onClick={handleTestXP(10, 'Test daily login')}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg font-medium"
-              >
-                +10 XP (Login)
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-3">
-              Demo tools - in production, XP is awarded by smart contracts
-            </p>
-          </div>
-
           {/* Web3 Uniqueness Highlight */}
           <div className="bg-gradient-to-br from-purple-600 to-blue-600 p-6 rounded-xl text-white">
-            <h3 className="text-xl font-bold mb-3">🚀 Why EduChain is Different</h3>
+            <h3 className="text-xl font-bold mb-3">Why EduChain is Different</h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
                 <span className="text-green-300 mt-1">✓</span>
