@@ -1,5 +1,9 @@
 import { GitHubLogoIcon } from "@radix-ui/react-icons"
+<<<<<<< HEAD
 import { Book, MessageCircle, Shield, X } from "lucide-react"
+=======
+import { Book,  MessageCircle, Shield, X } from "lucide-react"
+>>>>>>> 4fec95f5488d84cc681facaf4981facbb74ae2ee
 
 const Footer = () => {
   return (

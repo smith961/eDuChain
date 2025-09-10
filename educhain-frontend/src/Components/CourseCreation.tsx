@@ -33,7 +33,6 @@ const CourseCreationForm: React.FC = () => {
     title: '',
     content_type: '',
     content_url: '',
-    selected_content: '',
     duration: 0,
     order_index: 0,
   });
@@ -78,6 +77,7 @@ const CourseCreationForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+<<<<<<< HEAD
     setLessonForm((prev) => {
       const updatedForm = {
         ...prev,
@@ -104,6 +104,12 @@ const CourseCreationForm: React.FC = () => {
 
       return updatedForm;
     });
+=======
+    setLessonForm((prev) => ({
+      ...prev,
+      [name]: name === "duration" || name === "order_index" ? parseInt(value) : value,
+    }));
+>>>>>>> 4fec95f5488d84cc681facaf4981facbb74ae2ee
   };
   const isValidSuiAddress = (address: string): boolean => {
     return /^0x[0-9a-f]{1,64}$/.test(address) && address.length === 66;
@@ -277,7 +283,6 @@ const CourseCreationForm: React.FC = () => {
         title: '',
         content_type: '',
         content_url: '',
-        selected_content: '',
         duration: 0,
         order_index: 0,
       });
@@ -446,7 +451,7 @@ const CourseCreationForm: React.FC = () => {
   };
   return (
     <>
-      {activeTab === "create course" ? (
+      {  activeTab === "create course" ? (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
           <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl p-6 sm:p-10 border border-gray-100">
             <div className="text-center mb-10">
@@ -704,6 +709,7 @@ const CourseCreationForm: React.FC = () => {
             </div>
           </div>
         </div>
+        
 )}
 
 {/* Lesson Addition Modal */}
@@ -738,6 +744,7 @@ const CourseCreationForm: React.FC = () => {
         </FormInput>
 
         <FormInput
+<<<<<<< HEAD
           label="Predefined Lesson (Optional)"
           id="selected_content"
           name="selected_content"
@@ -758,11 +765,19 @@ const CourseCreationForm: React.FC = () => {
 
         <FormInput
           label="Custom Content URL"
+=======
+          label="Content URL"
+>>>>>>> 4fec95f5488d84cc681facaf4981facbb74ae2ee
           id="content_url"
           name="content_url"
           value={lessonForm.content_url}
           onChange={handleLessonInputChange}
+<<<<<<< HEAD
           placeholder="https://example.com/your-lesson or /local/path"
+=======
+          required
+          placeholder="https://example.com/content"
+>>>>>>> 4fec95f5488d84cc681facaf4981facbb74ae2ee
         />
         <div className="text-sm text-gray-500 mt-2">
           🌐 Final URL: {lessonForm.content_url || 'None - select predefined lesson above'}

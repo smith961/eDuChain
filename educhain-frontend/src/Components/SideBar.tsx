@@ -134,13 +134,13 @@ export default function Sidebar({ activePage, onPageChange }: SidebarProps) {
             activePage={activePage}
             onPageChange={onPageChange}
           />
-          <SidebarItem
+          {/* <SidebarItem
             icon={<FaShieldAlt />}
             label="Security"
             page="security"
             activePage={activePage}
             onPageChange={onPageChange}
-          />
+          /> */}
         </SidebarSection>
       </div>
     </div>
