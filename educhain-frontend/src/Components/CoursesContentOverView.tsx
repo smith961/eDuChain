@@ -354,7 +354,7 @@ export default function CoursesContentOverView({ onPageChange }: { onPageChange?
                         onClick={() => handleCourseAction(course)}
                         className={`px-4 py-2 rounded-md text-sm font-medium ${
                           isStarted
-                            ? 'bg-green-600 hover:bg-green-700'
+                            ? 'bg-green-600 hover:bg-blue-700'
                             : 'bg-blue-600 hover:bg-blue-700'
                         }`}
                       >
@@ -523,7 +523,7 @@ export default function CoursesContentOverView({ onPageChange }: { onPageChange?
       {/* Enrollment Quiz Modal */}
       {showEnrollmentQuiz && selectedCourseForQuiz && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto text-black">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
                 Course Enrollment Assessment
